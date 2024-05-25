@@ -1,4 +1,4 @@
-# denops-router.vim
+# denops-router
 
 A deno library to handle acwrite files for each buffer
 
