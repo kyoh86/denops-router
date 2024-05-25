@@ -1,4 +1,3 @@
-import type { Denops } from "jsr:@denops/core@6.1.0";
 import type { Bufname } from "https://deno.land/x/denops_std@v6.5.0/bufname/mod.ts";
 
 export interface Location {
@@ -7,7 +6,6 @@ export interface Location {
 }
 
 export type Action = (
-  denops: Denops,
   buf: Location,
   params: Record<string, unknown>,
 ) => Promise<void>;
@@ -22,21 +20,16 @@ export type Action = (
  * If the `save` method is not defined, the buffer may be read-only.
  */
 export interface Handler {
-  scheme: string;
-  path: string;
-
   /**
    * Read the buffer content and set it into the buffer.
-   * @param denops Denops instance.
    * @param buf Buffer to load.
    */
-  load(denops: Denops, buf: Location): Promise<void>;
+  load(buf: Location): Promise<void>;
   /**
    * Write the buffer content to.
-   * @param denops Denops instance.
    * @param buf Buffer to save.
    */
-  save?(denops: Denops, buf: Location): Promise<void>;
+  save?(buf: Location): Promise<void>;
   /**
    * Actions to be performed on the buffer.
    */
