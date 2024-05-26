@@ -1,4 +1,4 @@
-import type { Denops, Dispatcher } from "jsr:@denops/core@6.1.0";
+import type { Denops, Dispatcher } from "@denops/core";
 import { ensure, is, maybe } from "@core/unknownutil";
 import { batch } from "https://deno.land/x/denops_std@v6.5.0/batch/mod.ts";
 import * as buffer from "https://deno.land/x/denops_std@v6.5.0/buffer/mod.ts";
