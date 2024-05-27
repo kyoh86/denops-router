@@ -95,18 +95,6 @@ export class Router {
     });
   }
 
-  async #open(
-    denops: Denops,
-    path: string,
-    mods: string = "",
-    params?: BufnameParams,
-    fragment?: string,
-  ) {
-    const bufname = this.#bufname(path, params, fragment);
-    const edit = opener(mods);
-    await denops.cmd([mods, edit, bufname].join(" ").trim());
-  }
-
   async #load(denops: Denops, abuf: number, afile: string) {
     const { path, bufname, handler } = this.#match(afile);
     await buffer.ensure(denops, abuf, async () => {
@@ -150,12 +138,35 @@ export class Router {
   }
 
   /**
+   * Open a buffer with the specified path and parameters.
+   * The buffer is handled by the handler that matches the path.
+   *
+   * @param denops Denops instance to handle the buffer.
+   * @param path Path to open.
+   * @param mods Modifiers for the `:edit` command.
+   * @param params Parameters for the buffer name.
+   * @param fragment Fragment for the buffer name.
+   * @returns Promise that resolves when the buffer is opened.
+   */
+  public async open(
+    denops: Denops,
+    path: string,
+    mods: string = "",
+    params?: BufnameParams,
+    fragment?: string,
+  ) {
+    const bufname = this.#bufname(path, params, fragment);
+    const edit = opener(mods);
+    await denops.cmd([mods, edit, bufname].join(" ").trim());
+  }
+
+  /**
    * Set a handler for the specified path.
    *
    * @param path Path which the handler processes.
    * @param handler Handler to handle the buffer.
    */
-  route(path: string, handler: Handler) {
+  public route(path: string, handler: Handler) {
     this.#handlers.set(path, handler);
   }
 
@@ -166,7 +177,7 @@ export class Router {
    * @param prefix Prefix of the dispatcher methods; default: "router".
    * @returns Dispatcher to use.
    */
-  async dispatch(
+  public async dispatch(
     denops: Denops,
     dispatcher: Dispatcher,
     prefix = "router",
@@ -195,7 +206,7 @@ export class Router {
         ),
       );
       const fragments = maybe(uParams, is.String);
-      await this.#open(denops, path, mods || "", params, fragments);
+      await this.open(denops, path, mods || "", params, fragments);
     };
     override[`${prefix}:internal:load`] = async (
       uBuf: unknown,
