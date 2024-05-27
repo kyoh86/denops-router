@@ -6,7 +6,7 @@ export interface Location {
 }
 
 export type Action = (
-  buf: Location,
+  loc: Location,
   params: Record<string, unknown>,
 ) => Promise<void>;
 
@@ -22,14 +22,14 @@ export type Action = (
 export interface Handler {
   /**
    * Read the buffer content and set it into the buffer.
-   * @param buf Buffer to load.
+   * @param loc Buffer to load.
    */
-  load(buf: Location): Promise<void>;
+  load(loc: Location): Promise<void>;
   /**
    * Write the buffer content to.
-   * @param buf Buffer to save.
+   * @param loc Buffer to save.
    */
-  save?(buf: Location): Promise<void>;
+  save?(loc: Location): Promise<void>;
   /**
    * Actions to be performed on the buffer.
    */
