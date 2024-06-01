@@ -7,8 +7,11 @@ import * as option from "https://deno.land/x/denops_std@v6.5.0/option/mod.ts";
 import {
   type BufnameParams,
   format,
-  parse,
+  parse as parseAsBufname,
 } from "https://deno.land/x/denops_std@v6.5.0/bufname/mod.ts";
+import {
+  parse as parseArguments,
+} from "https://deno.land/x/denops_std@v6.5.0/argument/mod.ts";
 
 import opener from "./opener.ts";
 import type { Handler } from "./types.ts";
@@ -54,11 +57,16 @@ import type { Handler } from "./types.ts";
  * }
  * ```
  * ```vim
- * " Calling 'router:open' for a handler, 'foo-handler' with an argument.
- * " A new buffer becomes a buffer named 'foo://path/to/foo;args=<args>',
- * "  and the handler 'foo-handler' is called when the buffer is loaded
- * " And the buffer has a buftype 'acwrite' to save by the 'save' method of the handler.
- * command -nargs=1 Foo call denops#notify('plugin-name', 'router:open', ['path/to/foo', <q-mods>, {'args': <q-args>}])
+ * " Calling 'router:open' for the handler 'foo-handler' with a parameter;
+ * call denops#notify('plugin-name', 'router:open', ['path/to/foo', 'vertical', {'param1': 'bar'}, '.baz'])
+ * "  a new buffer becomes a buffer named 'foo://path/to/foo;param1=bar#.baz',
+ * "  and the handler 'foo-handler' is called when the buffer is loaded.
+ * " The buffer has a buftype 'acwrite' to save by the 'save' method of the handler.
+ *
+ * " Calling the handler from command, we can use 'router:command:open' API.
+ * command -nargs=* Foo call denops#notify('plugin-name', 'router:command:open', ['path/to/foo', <q-mods>, [<f-args>], '.corge'])
+ * " It parses command arguments as parameters for the buffer name.
+ * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux#.corge
  * ```
  */
 export class Router {
@@ -71,7 +79,7 @@ export class Router {
   }
 
   #match(bufname: string) {
-    const parsed = parse(bufname);
+    const parsed = parseAsBufname(bufname);
     if (parsed.scheme !== this.#scheme) {
       throw new Error(`Invalid operation for ${bufname}`);
     }
@@ -81,18 +89,6 @@ export class Router {
       }
     }
     throw new Error(`There's no valid handler for a buffer ${bufname}`);
-  }
-
-  #bufname(path: string, params?: BufnameParams, fragment?: string) {
-    if (!this.#handlers.has(path)) {
-      throw new Error(`There's no handler for a path '${path}'`);
-    }
-    return format({
-      scheme: this.#scheme,
-      expr: path,
-      params,
-      fragment,
-    });
   }
 
   async #load(denops: Denops, abuf: number, afile: string) {
@@ -138,7 +134,7 @@ export class Router {
   }
 
   /**
-   * Open a buffer with the specified path and parameters.
+   * Open a buffer with the specified path and parameters and a fragment.
    * The buffer is handled by the handler that matches the path.
    *
    * @param denops Denops instance to handle the buffer.
@@ -155,9 +151,19 @@ export class Router {
     params?: BufnameParams,
     fragment?: string,
   ) {
-    const bufname = this.#bufname(path, params, fragment);
+    if (!this.#handlers.has(path)) {
+      throw new Error(`There's no handler for a path '${path}'`);
+    }
+    const bufname = format({
+      scheme: this.#scheme,
+      expr: path,
+      params,
+      fragment,
+    });
     const edit = opener(mods);
-    await denops.cmd([mods, edit, bufname].join(" ").trim());
+    await denops.cmd(
+      [mods, edit, await denops.call("fnameescape", bufname)].join(" ").trim(),
+    );
   }
 
   /**
@@ -196,6 +202,7 @@ export class Router {
       uPath: unknown,
       uMods: unknown,
       uParams: unknown,
+      uFragment: unknown,
     ) => {
       const path = ensure(uPath, is.String);
       const mods = maybe(uMods, is.String);
@@ -205,8 +212,21 @@ export class Router {
           is.UnionOf([is.String, is.ArrayOf(is.String), is.Undefined]),
         ),
       );
-      const fragments = maybe(uParams, is.String);
-      await this.open(denops, path, mods || "", params, fragments);
+      const fragment = maybe(uFragment, is.String);
+      await this.open(denops, path, mods || "", params, fragment);
+    };
+    override[`${prefix}:command:open`] = async (
+      uPath: unknown,
+      uMods: unknown,
+      uArgs: unknown,
+      uFragment: unknown,
+    ) => {
+      const path = ensure(uPath, is.String);
+      const mods = maybe(uMods, is.String);
+      const args = maybe(uArgs, is.ArrayOf(is.String));
+      const [, params] = parseArguments(args || []);
+      const fragment = maybe(uFragment, is.String);
+      await this.open(denops, path, mods || "", params, fragment);
     };
     override[`${prefix}:internal:load`] = async (
       uBuf: unknown,

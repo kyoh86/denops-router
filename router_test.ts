@@ -34,6 +34,24 @@ test({
       "handler marker should be set as loaded",
     );
 
+    await denops.call("denops#request", denops.name, "router:open", [
+      "assert-loaded",
+      "",
+      { id: "123", name: "John" },
+      "bar.baz",
+    ]);
+    const buffersWithFragment = ensure(
+      await denops.call(
+        "getbufinfo",
+        "foo://assert-loaded;id=123&name=John\\#bar.baz",
+      ),
+      is.ArrayOf(is.ObjectOf({ variables: is.Record })),
+    );
+    assert(
+      buffersWithFragment.length === 1,
+      "buffer with fragment should be opened",
+    );
+
     // TODO: router:internal:save
     // TODO: router:action
   },
