@@ -17,57 +17,13 @@ import opener from "./opener.ts";
 import type { Handler } from "./types.ts";
 
 /**
- * Router class to switch handlers for each buffer.
+ * Router class defines how a plugin handles each buffer that is named like URL
+ * such as 'foo://path/to;param=v#fragment'
  *
- * The dispatcher has the following methods:
- * - `router:open`
- * - `router:action`
+ * It register the "BufReadCmd" auto command, and opened the buffer matching for any handler,
+ *  the handler will be called.
  *
- * `router:open` method is used to open a buffer with the specified path and parameters.
- * `router:action` method is used to call the action of the handler.
- *
- * Each buffer is handled by a handler that matches the buffer name.
- *
- * @example
- * ```typescript
- * export async function main(denops: Denops) {
- *   const r = new Router("foo");
- *   r.route("path/to/foo",  {
- *     load: async (loc) => {
- *       await denops.cmd(`echo "Read foo: ${loc.bufname}"`);
- *     },
- *     save: async (loc) => {
- *       await denops.cmd(`echo "saveing foo: ${loc.bufname}"`);
- *     },
- *   });
- *   r.route("path/to/bar", {
- *     load: async (loc) => {
- *       await denops.cmd(`echo "Read bar: ${loc.name}"`);
- *       await denops.cmd(
- *         `nnoremap <buffer> <silent> <space> <CMD>call denops#notify('${denops.name}', 'router:action', [bufnr('%'), expand('%:p'), 'play', {}])<CR>`,
- *       );
- *     },
- *     actions: {
- *       play: async (loc, _params) => {
- *         await denops.cmd(`echo "Action 'play' in bar: ${loc.name}"`);
- *       },
- *     },
- *   });
- *   denops.dispatcher = await r.dispatch(denops, {});
- * }
- * ```
- * ```vim
- * " Calling 'router:open' for the handler 'foo-handler' with a parameter;
- * call denops#notify('plugin-name', 'router:open', ['path/to/foo', 'vertical', {'param1': 'bar'}, '.baz'])
- * "  a new buffer becomes a buffer named 'foo://path/to/foo;param1=bar#.baz',
- * "  and the handler 'foo-handler' is called when the buffer is loaded.
- * " The buffer has a buftype 'acwrite' to save by the 'save' method of the handler.
- *
- * " Calling the handler from command, we can use 'router:command:open' API.
- * command -nargs=* Foo call denops#notify('plugin-name', 'router:command:open', ['path/to/foo', <q-mods>, [<f-args>], '.corge'])
- * " It parses command arguments as parameters for the buffer name.
- * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux#.corge
- * ```
+ * It selects the handler by the path, and pass parameters and a fragment to them.
  */
 export class Router {
   #handlers: Map<string, Handler>;
@@ -177,8 +133,61 @@ export class Router {
   }
 
   /**
-   * Dispatch the given dispatcher.
+   * Register methods to call the router in given dispatcher.
    *
+   * The dispatcher will have the following methods:
+   * - `router:open`
+   * - `router:command:open`
+   * - `router:action`
+   *
+   * `router:open` method is used to open a buffer with the specified
+   *  path and parameters.
+   *
+   * `router:command:open` method is used to open a buffer with the specified
+   *  path and command-arguments (using <f-args>)
+   *
+   * `router:action` method is used to call the action of the handler.
+   *
+   * @example
+   * ```typescript
+   * export async function main(denops: Denops) {
+   *   const r = new Router("foo");
+   *   r.route("path/to/foo",  {
+   *     load: async (loc) => {
+   *       await denops.cmd(`echo "Read foo: ${loc.bufname}"`);
+   *     },
+   *     save: async (loc) => {
+   *       await denops.cmd(`echo "saveing foo: ${loc.bufname}"`);
+   *     },
+   *   });
+   *   r.route("path/to/bar", {
+   *     load: async (loc) => {
+   *       await denops.cmd(`echo "Read bar: ${loc.name}"`);
+   *       await denops.cmd(
+   *         `nnoremap <buffer> <silent> <space> <CMD>call denops#notify('${denops.name}', 'router:action', [bufnr('%'), expand('%:p'), 'play', {}])<CR>`,
+   *       );
+   *     },
+   *     actions: {
+   *       play: async (loc, _params) => {
+   *         await denops.cmd(`echo "Action 'play' in bar: ${loc.name}"`);
+   *       },
+   *     },
+   *   });
+   *   denops.dispatcher = await r.dispatch(denops, {});
+   * }
+   * ```
+   * ```vim
+   * " Calling 'router:open' for the handler 'foo-handler' with a parameter;
+   * call denops#notify('plugin-name', 'router:open', ['path/to/foo', 'vertical', {'param1': 'bar'}, '.baz'])
+   * "  a new buffer becomes a buffer named 'foo://path/to/foo;param1=bar#.baz',
+   * "  and the handler 'foo-handler' is called when the buffer is loaded.
+   * " The buffer has a buftype 'acwrite' to save by the 'save' method of the handler.
+   *
+   * " Calling the handler from command, we can use 'router:command:open' API.
+   * command -nargs=* Foo call denops#notify('plugin-name', 'router:command:open', ['path/to/foo', <q-mods>, [<f-args>], '.corge'])
+   * " It parses command arguments as parameters for the buffer name.
+   * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux#.corge
+   * ```
    * @param dispatcher Dispatcher to dispatch.
    * @param prefix Prefix of the dispatcher methods; default: "router".
    * @returns Dispatcher to use.
