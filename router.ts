@@ -2,6 +2,7 @@ import type { Denops, Dispatcher } from "@denops/core";
 import { ensure, is, maybe } from "@core/unknownutil";
 import { batch } from "https://deno.land/x/denops_std@v6.5.0/batch/mod.ts";
 import * as buffer from "https://deno.land/x/denops_std@v6.5.0/buffer/mod.ts";
+import * as fn from "https://deno.land/x/denops_std@v6.5.0/function/mod.ts";
 import * as vars from "https://deno.land/x/denops_std@v6.5.0/variable/mod.ts";
 import * as option from "https://deno.land/x/denops_std@v6.5.0/option/mod.ts";
 import {
@@ -75,18 +76,18 @@ export class Router {
     await handler.save({ bufnr: abuf, bufname });
   }
 
-  async #action(
-    abuf: number,
-    afile: string,
+  public async action(
+    denops: Denops,
+    buf: number,
     actName: string,
     params: Record<string, unknown>,
   ) {
-    const { bufname, handler } = this.#match(afile);
+    const { bufname, handler } = this.#match(await fn.bufname(denops, buf));
     const action = (handler.actions || {})[actName];
     if (!action) {
-      throw new Error(`There's no valid action ${actName} for ${afile}`);
+      throw new Error(`There's no valid action ${actName} for ${buf}`);
     }
-    await action({ bufnr: abuf, bufname }, params);
+    await action({ bufnr: buf, bufname }, params);
   }
 
   /**
@@ -164,7 +165,7 @@ export class Router {
    *     load: async (loc) => {
    *       await denops.cmd(`echo "Read bar: ${loc.name}"`);
    *       await denops.cmd(
-   *         `nnoremap <buffer> <silent> <space> <CMD>call denops#notify('${denops.name}', 'router:action', [bufnr('%'), expand('%:p'), 'play', {}])<CR>`,
+   *         `nnoremap <buffer> <silent> <space> <CMD>call denops#notify('${denops.name}', 'router:action', [bufnr('%'), 'play', {}])<CR>`,
    *       );
    *     },
    *     actions: {
@@ -255,15 +256,13 @@ export class Router {
     };
     override[`${prefix}:action`] = async (
       uBuf: unknown,
-      uFile: unknown,
       uAct: unknown,
       uParams: unknown,
     ) => {
       const buf = ensure(uBuf, is.Number);
-      const file = ensure(uFile, is.String);
       const act = ensure(uAct, is.String);
       const params = ensure(uParams, is.Record);
-      await this.#action(buf, file, act, params);
+      await this.action(denops, buf, act, params);
     };
     return { ...dispatcher, ...override };
   }
