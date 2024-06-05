@@ -294,7 +294,7 @@ export class Router {
       const name = maybe(uName, is.String) ||
         commandName(this.#scheme, "Open", path);
       await denops.cmd(
-        `command -nargs=* ${name} call denops#notify('${denops.name}', 'router:command:open', ['${path}', <q-mods>, [<f-args>], ''])`,
+        `command -nargs=* ${name} call denops#request('${denops.name}', 'router:command:open', ['${path}', <q-mods>, [<f-args>], ''])`,
       );
     };
     return { ...dispatcher, ...override };

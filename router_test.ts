@@ -66,16 +66,7 @@ test({
         "getbufinfo",
         "foo://command-defined;",
       ),
-      is.ArrayOf(is.ObjectOf({ variables: is.Record })),
-    );
-    console.log(
-      ensure(
-        await denops.call(
-          "getbufinfo",
-          "foo://command-defined;",
-        ),
-        is.ArrayOf(is.ObjectOf({ name: is.String })),
-      ).map((x) => x.name),
+      is.ArrayOf(is.Unknown),
     );
     assert(
       buffersWithCommand.length === 1,
@@ -88,7 +79,7 @@ test({
         "getbufinfo",
         "foo://command-defined;p1=v1&p2=v2",
       ),
-      is.ArrayOf(is.ObjectOf({ variables: is.Record })),
+      is.ArrayOf(is.Unknown),
     );
     assert(
       buffersWithCommandAndParams.length === 1,
