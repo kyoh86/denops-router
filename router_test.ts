@@ -54,5 +54,45 @@ test({
 
     // TODO: router:internal:save
     // TODO: router:action
+    r.handle("command-defined", {
+      load: (_loc) => Promise.resolve(),
+    });
+    await denops.call("denops#request", denops.name, "router:setup:command", [
+      "command-defined",
+    ]);
+    await denops.cmd("FooOpenCommandDefined");
+    const buffersWithCommand = ensure(
+      await denops.call(
+        "getbufinfo",
+        "foo://command-defined;",
+      ),
+      is.ArrayOf(is.ObjectOf({ variables: is.Record })),
+    );
+    console.log(
+      ensure(
+        await denops.call(
+          "getbufinfo",
+          "foo://command-defined;",
+        ),
+        is.ArrayOf(is.ObjectOf({ name: is.String })),
+      ).map((x) => x.name),
+    );
+    assert(
+      buffersWithCommand.length === 1,
+      "buffer with command should be opened",
+    );
+
+    await denops.cmd("FooOpenCommandDefined --p1=v1 --p2=v2");
+    const buffersWithCommandAndParams = ensure(
+      await denops.call(
+        "getbufinfo",
+        "foo://command-defined;p1=v1&p2=v2",
+      ),
+      is.ArrayOf(is.ObjectOf({ variables: is.Record })),
+    );
+    assert(
+      buffersWithCommandAndParams.length === 1,
+      "buffer with command and params should be opened",
+    );
   },
 });

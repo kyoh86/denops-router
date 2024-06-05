@@ -16,6 +16,7 @@ import {
 
 import opener from "./opener.ts";
 import type { Handler } from "./types.ts";
+import { commandName } from "./str.ts";
 
 /**
  * Router class defines how a plugin handles each buffer that is named like URL
@@ -284,6 +285,17 @@ export class Router {
       const act = ensure(uAct, is.String);
       const params = ensure(uParams, is.Record);
       await this.action(denops, buf, act, params);
+    };
+    override[`${prefix}:setup:command`] = async (
+      uPath: unknown,
+      uName: unknown,
+    ) => {
+      const path = ensure(uPath, is.String);
+      const name = maybe(uName, is.String) ||
+        commandName(this.#scheme, "Open", path);
+      await denops.cmd(
+        `command -nargs=* ${name} call denops#notify('${denops.name}', 'router:command:open', ['${path}', <q-mods>, [<f-args>], ''])`,
+      );
     };
     return { ...dispatcher, ...override };
   }
