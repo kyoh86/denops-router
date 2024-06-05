@@ -8,13 +8,13 @@ test({
   name: "all",
   fn: async (denops) => {
     const r = new Router("foo");
-    r.route("path/to", {
+    r.handle("path/to", {
       load: (_loc) => Promise.resolve(),
     });
     denops.dispatcher = await r.dispatch(denops, {});
     assert(true, "setting handler and dispatching should be successed");
 
-    r.route("assert-loaded", {
+    r.handle("assert-loaded", {
       load: (_loc) => Promise.resolve(),
     });
 

@@ -129,7 +129,7 @@ export class Router {
    * @param path Path which the handler processes.
    * @param handler Handler to handle the buffer.
    */
-  public route(path: string, handler: Handler) {
+  public handle(path: string, handler: Handler) {
     this.#handlers.set(path, handler);
   }
 
@@ -153,7 +153,7 @@ export class Router {
    * ```typescript
    * export async function main(denops: Denops) {
    *   const r = new Router("foo");
-   *   r.route("path/to/foo",  {
+   *   r.handle("path/to/foo",  {
    *     load: async (loc) => {
    *       await denops.cmd(`echo "Read foo: ${loc.bufname}"`);
    *     },
@@ -161,7 +161,7 @@ export class Router {
    *       await denops.cmd(`echo "saveing foo: ${loc.bufname}"`);
    *     },
    *   });
-   *   r.route("path/to/bar", {
+   *   r.handle("path/to/bar", {
    *     load: async (loc) => {
    *       await denops.cmd(`echo "Read bar: ${loc.name}"`);
    *       await denops.cmd(
