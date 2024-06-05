@@ -211,7 +211,7 @@ export class Router {
    * " It parses command arguments as parameters for the buffer name.
    * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux#.corge
    * ```
-   * @param dispatcher Dispatcher to dispatch.
+   * @param dispatcher Source dispatcher to override.
    * @param prefix Prefix of the dispatcher methods; default: "router".
    * @returns Dispatcher to use.
    */
