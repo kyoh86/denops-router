@@ -23,6 +23,7 @@ import type { Handler } from "./types.ts";
  *
  * It register the "BufReadCmd" auto command, and opened the buffer matching for any handler,
  *  the handler will be called.
+ * Handlers must have the "Handler" interface.
  *
  * It selects the handler by the path, and pass parameters and a fragment to them.
  */
@@ -48,6 +49,11 @@ export class Router {
     throw new Error(`There's no valid handler for a buffer ${bufname}`);
   }
 
+  /**
+   * It will be called from auto-cmd BufReadCmd with <abuf> and <afile>,
+   * sets the buffer as a special buffer,
+   * and call the 'load' method of the handler that matches for the path.
+   */
   async #load(denops: Denops, abuf: number, afile: string) {
     const { path, bufname, handler } = this.#match(afile);
     await buffer.ensure(denops, abuf, async () => {
@@ -68,6 +74,11 @@ export class Router {
     });
   }
 
+  /**
+   * It will be called from auto-cmd BufWriteCmd with <abuf> and <afile>,
+   * searches the handler for the buffer,
+   * and call the 'save' method of it.
+   */
   async #save(abuf: number, afile: string) {
     const { bufname, handler } = this.#match(afile);
     if (!handler.save) {
@@ -76,6 +87,15 @@ export class Router {
     await handler.save({ bufnr: abuf, bufname });
   }
 
+  /**
+   * Call an action of the handler bound for the buffer.
+   * We can also call this from dispatched interface: `router:action`.
+   *
+   * @param buf A target buffer number (see: :help bufnr())
+   * @param actName A name of an action to be called.
+   * @param params Parameters for the action. Note for that is not parameters in the buffer-name.
+   * @return Promise<void>
+   */
   public async action(
     denops: Denops,
     buf: number,
@@ -93,6 +113,7 @@ export class Router {
   /**
    * Open a buffer with the specified path and parameters and a fragment.
    * The buffer is handled by the handler that matches the path.
+   * We can also call this from dispatched interface: `router:open`.
    *
    * @param denops Denops instance to handle the buffer.
    * @param path Path to open.
