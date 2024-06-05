@@ -2,21 +2,35 @@ import { test } from "@denops/test";
 import { assert } from "@std/assert";
 import { Router } from "./router.ts";
 import { ensure, is } from "@core/unknownutil";
+import type { Buffer } from "./types.ts";
 
 test({
   mode: "all",
-  name: "all",
+  name: "setting handler and dispatching should be successed",
   fn: async (denops) => {
-    const r = new Router("foo");
+    const r = new Router("testA");
     r.handle("path/to", {
-      load: (_loc) => Promise.resolve(),
+      load: (_buf) => Promise.resolve(),
     });
     denops.dispatcher = await r.dispatch(denops, {});
-    assert(true, "setting handler and dispatching should be successed");
+  },
+});
 
+test({
+  mode: "all",
+  name: "handler should be loaded when it opens buffer",
+  fn: async (denops) => {
+    const r = new Router("testB");
+    let loaded: boolean = false;
+    let loadedBuffer: Buffer;
     r.handle("assert-loaded", {
-      load: (_loc) => Promise.resolve(),
+      load: (buf) => {
+        loaded = true;
+        loadedBuffer = buf;
+        return Promise.resolve();
+      },
     });
+    denops.dispatcher = await r.dispatch(denops, {});
 
     await denops.call("denops#request", denops.name, "router:open", [
       "assert-loaded",
@@ -24,26 +38,44 @@ test({
       { id: "123" },
     ]);
     const buffers = ensure(
-      await denops.call("getbufinfo", "foo://assert-loaded;id=123"),
+      await denops.call("getbufinfo", "testB://assert-loaded;id=123"),
       is.ArrayOf(is.ObjectOf({ variables: is.Record })),
     );
     assert(buffers.length === 1, "buffer should be opened");
+    assert(loaded, "handler should be loaded");
+    assert(
+      // @ts-ignore This is assigned by closure
+      loadedBuffer?.bufname.scheme === "testB",
+      "handler should be loaded",
+    );
     const marker = buffers[0].variables.denops_router_handler_path;
     assert(
       marker === "assert-loaded",
       "handler marker should be set as loaded",
     );
+  },
+});
 
+test({
+  mode: "all",
+  name: "buffers should be opened with fragment and params",
+  fn: async (denops) => {
+    const r = new Router("testC");
+    r.handle("assert-loaded", {
+      load: (_buf) => Promise.resolve(),
+    });
+    denops.dispatcher = await r.dispatch(denops, {});
     await denops.call("denops#request", denops.name, "router:open", [
       "assert-loaded",
       "",
       { id: "123", name: "John" },
       "bar.baz",
     ]);
+
     const buffersWithFragment = ensure(
       await denops.call(
         "getbufinfo",
-        "foo://assert-loaded;id=123&name=John\\#bar.baz",
+        "testC://assert-loaded;id=123&name=John\\#bar.baz",
       ),
       is.ArrayOf(is.ObjectOf({ variables: is.Record })),
     );
@@ -51,20 +83,29 @@ test({
       buffersWithFragment.length === 1,
       "buffer with fragment should be opened",
     );
+  },
+});
 
-    // TODO: router:internal:save
-    // TODO: router:action
+test({
+  mode: "all",
+  name: "buffers should be opened with command",
+  fn: async (denops) => {
+    const r = new Router("testD");
+    r.handle("assert-loaded", {
+      load: (_buf) => Promise.resolve(),
+    });
+    denops.dispatcher = await r.dispatch(denops, {});
     r.handle("command-defined", {
-      load: (_loc) => Promise.resolve(),
+      load: (_buf) => Promise.resolve(),
     });
     await denops.call("denops#request", denops.name, "router:setup:command", [
       "command-defined",
     ]);
-    await denops.cmd("FooOpenCommandDefined");
+    await denops.cmd("TestDOpenCommandDefined");
     const buffersWithCommand = ensure(
       await denops.call(
         "getbufinfo",
-        "foo://command-defined;",
+        "testD://command-defined;",
       ),
       is.ArrayOf(is.Unknown),
     );
@@ -73,11 +114,11 @@ test({
       "buffer with command should be opened",
     );
 
-    await denops.cmd("FooOpenCommandDefined --p1=v1 --p2=v2");
+    await denops.cmd("TestDOpenCommandDefined --p1=v1 --p2=v2");
     const buffersWithCommandAndParams = ensure(
       await denops.call(
         "getbufinfo",
-        "foo://command-defined;p1=v1&p2=v2",
+        "testD://command-defined;p1=v1&p2=v2",
       ),
       is.ArrayOf(is.Unknown),
     );
@@ -87,3 +128,6 @@ test({
     );
   },
 });
+
+// TODO: Test router:internal:save
+// TODO: Test router:action
