@@ -10,11 +10,5 @@
     "test": "deno test --allow-env=DENOPS_TEST_CONNECT_TIMEOUT,DENOPS_TEST_DENOPS_PATH,DENOPS_TEST_VERBOSE,DENOPS_TEST_VIM_EXECUTABLE,DENOPS_TEST_NVIM_EXECUTABLE --allow-run=vim,nvim --allow-net=127.0.0.1:0 --allow-read",
     "check": "deno check ./**/*.ts",
     "lint": "deno lint ./**/*.ts"
-  },
-  "imports": {
-    "@core/unknownutil": "jsr:@core/unknownutil@^3.18.1",
-    "@denops/core": "jsr:@denops/core@^6.1.0",
-    "@denops/test": "jsr:@denops/test@^2.0.1",
-    "@std/assert": "jsr:@std/assert@^0.225.3"
   }
 }

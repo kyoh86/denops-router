@@ -1,7 +1,7 @@
-import { test } from "@denops/test";
-import { assert } from "@std/assert";
+import { test } from "jsr:@denops/test@^2.0.1";
+import { assert } from "jsr:@std/assert@^0.225.3";
 import { Router } from "./router.ts";
-import { ensure, is } from "@core/unknownutil";
+import { ensure, is } from "jsr:@core/unknownutil@^3.18.1";
 import type { Buffer } from "./types.ts";
 
 test({

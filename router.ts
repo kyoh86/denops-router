@@ -1,6 +1,7 @@
-import type { Denops, Dispatcher } from "@denops/core";
-import { ensure, is, maybe } from "@core/unknownutil";
+import type { Denops, Dispatcher } from "jsr:@denops/core@^6.1.0";
+import { ensure, is, maybe } from "jsr:@core/unknownutil@^3.18.1";
 import { batch } from "https://deno.land/x/denops_std@v6.5.0/batch/mod.ts";
+import { kebabToCamel } from "jsr:@kyoh86/denops-bind-params@0.0.3/keycase";
 import * as buffer from "https://deno.land/x/denops_std@v6.5.0/buffer/mod.ts";
 import * as fn from "https://deno.land/x/denops_std@v6.5.0/function/mod.ts";
 import * as vars from "https://deno.land/x/denops_std@v6.5.0/variable/mod.ts";
@@ -261,7 +262,7 @@ export class Router {
       const args = maybe(uArgs, is.ArrayOf(is.String));
       const [, params] = parseArguments(args || []);
       const fragment = maybe(uFragment, is.String);
-      await this.open(denops, path, mods || "", params, fragment);
+      await this.open(denops, path, mods || "", kebabToCamel(params), fragment);
     };
     override[`${prefix}:internal:load`] = async (
       uBuf: unknown,

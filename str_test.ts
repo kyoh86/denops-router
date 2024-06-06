@@ -1,5 +1,5 @@
 import { commandName } from "./str.ts";
-import { assertEquals } from "https://deno.land/std@0.210.0/assert/mod.ts";
+import { assertEquals } from "jsr:@std/assert@^0.225.3";
 
 Deno.test("commandName", () => {
   assertEquals(commandName("foo", "bar/baz"), "FooBarBaz");
