@@ -62,14 +62,16 @@ export class Router {
         await handler.load({ bufnr: abuf, bufname });
         await vars.b.set(denops, "denops_router_handler_path", path); // A marker for the handler kind: now it's used just for the test
         await option.swapfile.setLocal(denops, false);
+        await option.modified.setLocal(denops, false);
+        await option.bufhidden.setLocal(denops, "wipe");
         if (handler.save) {
           await denops.cmd(
-            `autocmd BufWriteCmd <buffer> call denops#notify('${denops.name}', 'router:save', [${abuf}, '${afile}'])`,
+            `autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', 'router:save', [${abuf}, '${afile}'])`,
           );
           await option.buftype.setLocal(denops, "acwrite");
         } else {
           await option.modifiable.setLocal(denops, false);
-          await option.bufhidden.setLocal(denops, "wipe");
+          await option.readonly.setLocal(denops, true);
         }
       });
     });
@@ -80,12 +82,13 @@ export class Router {
    * searches the handler for the buffer,
    * and call the 'save' method of it.
    */
-  async #save(abuf: number, afile: string) {
+  async #save(denops: Denops, abuf: number, afile: string) {
     const { bufname, handler } = this.#match(afile);
     if (!handler.save) {
       throw new Error(`There's no valid writable handler for ${afile}`);
     }
     await handler.save({ bufnr: abuf, bufname });
+    await option.modified.setLocal(denops, false);
   }
 
   /**
@@ -274,7 +277,7 @@ export class Router {
     ) => {
       const buf = ensure(uBuf, is.Number);
       const file = ensure(uFile, is.String);
-      await this.#save(buf, file);
+      await this.#save(denops, buf, file);
     };
     override[`${prefix}:action`] = async (
       uBuf: unknown,
