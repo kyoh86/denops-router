@@ -56,7 +56,7 @@ export class Router {
    * sets the buffer as a special buffer,
    * and call the 'load' method of the handler that matches for the path.
    */
-  async #load(denops: Denops, abuf: number, afile: string) {
+  async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
     const { path, bufname, handler } = this.#match(afile);
     await buffer.ensure(denops, abuf, async () => {
       await batch(denops, async (denops) => {
@@ -67,7 +67,7 @@ export class Router {
         await option.bufhidden.setLocal(denops, "wipe");
         if (handler.save) {
           await denops.cmd(
-            `autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', 'router:save', [${abuf}, '${afile}'])`,
+            `autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])`,
           );
           await option.buftype.setLocal(denops, "acwrite");
         } else {
@@ -228,7 +228,7 @@ export class Router {
       await denops.cmd(`augroup denops-${denops.name}-${this.#scheme}`);
       await denops.cmd(`autocmd! *`);
       await denops.cmd(
-        `autocmd BufReadCmd ${this.#scheme}://* call denops#request('${denops.name}', 'router:internal:load', [bufnr(), bufname()])`,
+        `autocmd BufReadCmd ${this.#scheme}://* call denops#request('${denops.name}', '${prefix}:internal:load', [bufnr(), bufname()])`,
       );
       await denops.cmd("augroup END");
     });
@@ -270,7 +270,7 @@ export class Router {
     ) => {
       const buf = ensure(uBuf, is.Number);
       const file = ensure(uFile, is.String);
-      await this.#load(denops, buf, file);
+      await this.#load(denops, prefix, buf, file);
     };
     override[`${prefix}:internal:save`] = async (
       uBuf: unknown,
