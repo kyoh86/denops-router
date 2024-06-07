@@ -32,6 +32,7 @@ import { commandName } from "./str.ts";
 export class Router {
   #handlers: Map<string, Handler>;
   #scheme: string;
+  #defaultHandler?: Handler;
 
   constructor(scheme: string) {
     this.#handlers = new Map();
@@ -47,6 +48,13 @@ export class Router {
       if (path === parsed.expr) {
         return { bufname: parsed, path, handler };
       }
+    }
+    if (this.#defaultHandler) {
+      return {
+        bufname: parsed,
+        path: parsed.expr,
+        handler: this.#defaultHandler,
+      };
     }
     throw new Error(`There's no valid handler for a buffer ${bufname}`);
   }
@@ -134,7 +142,7 @@ export class Router {
     params?: BufnameParams,
     fragment?: string,
   ) {
-    if (!this.#handlers.has(path)) {
+    if (!this.#handlers.has(path) && !this.#defaultHandler) {
       throw new Error(`There's no handler for a path '${path}'`);
     }
     const bufname = format({
@@ -157,6 +165,15 @@ export class Router {
    */
   public handle(path: string, handler: Handler) {
     this.#handlers.set(path, handler);
+  }
+
+  /**
+   * Set a handler to handle the buffer when there's no handler matched for the path.
+   *
+   * @param handler Handler to handle the buffer.
+   */
+  public handleFallback(handler: Handler) {
+    this.#defaultHandler = handler;
   }
 
   /**
