@@ -20,14 +20,14 @@ import type { Handler } from "./types.ts";
 import { pascalWords } from "./str.ts";
 
 /**
- * Router class defines how a plugin handles each buffer that is named like URL
- * such as 'foo://path/to;param=v#fragment'
+ * `Router` class defines how a Denops plugin handles each buffer that is named
+ * like a URL such as `foo://path/to;param=value#fragment`.
  *
- * It register the "BufReadCmd" auto command, and opened the buffer matching for any handler,
- *  the handler will be called.
- * Handlers must have the "Handler" interface.
+ * It registers the `BufReadCmd` auto command, and when a buffer is opened matching
+ * any handler, the corresponding handler will be called. Handlers must implement the
+ * `Handler` interface.
  *
- * It selects the handler by the path, and pass parameters and a fragment to them.
+ * The router selects the handler by the path and passes parameters and a fragment to it.
  */
 export class Router {
   #handlers: Map<string, Handler>;
@@ -60,11 +60,15 @@ export class Router {
   }
 
   /**
-   * It will be called from auto-cmd BufReadCmd with <abuf> and <afile>,
-   * sets the buffer as a special buffer,
-   * and call the 'load' method of the handler that matches for the path.
-   */
-  async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
+   * This method is called from the auto command `BufReadCmd` with `<abuf>` and `<afile>`.
+   * It sets the buffer as a special buffer and calls the `load` method of the handler
+   * that matches the path.
+   *
+   * @param denops - Denops instance.
+   * @param prefix - Prefix for internal command names.
+   * @param abuf - Buffer number.
+   * @param afile - File name.
+   */ async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
     const { path, bufname, handler } = this.#match(afile);
     await buffer.ensure(denops, abuf, async () => {
       await batch(denops, async (denops) => {
@@ -87,11 +91,13 @@ export class Router {
   }
 
   /**
-   * It will be called from auto-cmd BufWriteCmd with <abuf> and <afile>,
-   * searches the handler for the buffer,
-   * and call the 'save' method of it.
-   */
-  async #save(denops: Denops, abuf: number, afile: string) {
+   * This method is called from the auto command `BufWriteCmd` with `<abuf>` and `<afile>`.
+   * It searches the handler for the buffer and calls the `save` method of it.
+   *
+   * @param denops - Denops instance.
+   * @param abuf - Buffer number.
+   * @param afile - File name.
+   */ async #save(denops: Denops, abuf: number, afile: string) {
     const { bufname, handler } = this.#match(afile);
     if (!handler.save) {
       throw new Error(`There's no valid writable handler for ${afile}`);
@@ -102,11 +108,12 @@ export class Router {
 
   /**
    * Call an action of the handler bound for the buffer.
-   * We can also call this from dispatched interface: `router:action`.
+   * This method can also be called from the dispatched interface: `router:action`.
    *
-   * @param buf A target buffer number (see: :help bufnr())
-   * @param actName A name of an action to be called.
-   * @param params Parameters for the action. Note for that is not parameters in the buffer-name.
+   * @param denops - Denops instance.
+   * @param buf - Target buffer number.
+   * @param actName - Name of the action to be called.
+   * @param params - Parameters for the action. Note that these are not parameters in the buffer name.
    * @return Promise<void>
    */
   public async action(
@@ -124,15 +131,15 @@ export class Router {
   }
 
   /**
-   * Open a buffer with the specified path and parameters and a fragment.
+   * Open a buffer with the specified path, parameters, and fragment.
    * The buffer is handled by the handler that matches the path.
-   * We can also call this from dispatched interface: `router:open`.
+   * This method can also be called from the dispatched interface: `router:open`.
    *
-   * @param denops Denops instance to handle the buffer.
-   * @param path Path to open.
-   * @param mods Modifiers for the `:edit` command.
-   * @param params Parameters for the buffer name.
-   * @param fragment Fragment for the buffer name.
+   * @param denops - Denops instance.
+   * @param path - Path to open.
+   * @param mods - Modifiers for the `:edit` command.
+   * @param params - Parameters for the buffer name.
+   * @param fragment - Fragment for the buffer name.
    * @returns Promise that resolves when the buffer is opened.
    */
   public async open(
@@ -160,8 +167,8 @@ export class Router {
   /**
    * Set a handler for the specified path.
    *
-   * @param path Path which the handler processes.
-   * @param handler Handler to handle the buffer.
+   * @param path - Path which the handler processes.
+   * @param handler - Handler to handle the buffer.
    */
   public handle(path: string, handler: Handler) {
     this.#handlers.set(path, handler);
@@ -170,38 +177,41 @@ export class Router {
   /**
    * Set a handler to handle the buffer when there's no handler matched for the path.
    *
-   * @param handler Handler to handle the buffer.
+   * @param handler - Handler to handle the buffer.
    */
   public handleFallback(handler: Handler) {
     this.#defaultHandler = handler;
   }
 
   /**
-   * Register methods to call the router in given dispatcher.
+   * Register methods to call the router in the given dispatcher.
    *
    * The dispatcher will have the following methods:
    * - `router:open`
    * - `router:command:open`
    * - `router:action`
+   * - `router:setup:command`
    *
    * `router:open` method is used to open a buffer with the specified
-   *  path and parameters.
+   * path and parameters.
    *
    * `router:command:open` method is used to open a buffer with the specified
-   *  path and command-arguments (using <f-args>)
+   * path and command-arguments (using `<f-args>`).
    *
    * `router:action` method is used to call the action of the handler.
+   *
+   * `router:setup:command` method is used to set up a command for opening a buffer.
    *
    * @example
    * ```typescript
    * export async function main(denops: Denops) {
    *   const r = new Router("foo");
-   *   r.handle("path/to/foo",  {
+   *   r.handle("path/to/foo", {
    *     load: async (loc) => {
    *       await denops.cmd(`echo "Read foo: ${loc.bufname}"`);
    *     },
    *     save: async (loc) => {
-   *       await denops.cmd(`echo "saveing foo: ${loc.bufname}"`);
+   *       await denops.cmd(`echo "Saving foo: ${loc.bufname}"`);
    *     },
    *   });
    *   r.handle("path/to/bar", {
@@ -221,19 +231,19 @@ export class Router {
    * }
    * ```
    * ```vim
-   * " Calling 'router:open' for the handler 'foo-handler' with a parameter;
+   * " Call 'router:open' for the handler 'foo-handler' with a parameter.
    * call denops#notify('plugin-name', 'router:open', ['path/to/foo', 'vertical', {'param1': 'bar'}, '.baz'])
-   * "  a new buffer becomes a buffer named 'foo://path/to/foo;param1=bar#.baz',
-   * "  and the handler 'foo-handler' is called when the buffer is loaded.
+   * " A new buffer becomes a buffer named 'foo://path/to/foo;param1=bar#.baz',
+   * " and the handler 'foo-handler' is called when the buffer is loaded.
    * " The buffer has a buftype 'acwrite' to save by the 'save' method of the handler.
    *
    * " Calling the handler from command, we can use 'router:command:open' API.
-   * command -nargs=* Foo call denops#notify('plugin-name', 'router:command:open', ['path/to/foo', <q-mods>, [<f-args>], '.corge'])
+   * command! -nargs=* Foo call denops#notify('plugin-name', 'router:command:open', ['path/to/foo', <q-mods>, [<f-args>], ''])
    * " It parses command arguments as parameters for the buffer name.
-   * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux#.corge
+   * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux
    * ```
-   * @param dispatcher Source dispatcher to override.
-   * @param prefix Prefix of the dispatcher methods; default: "router".
+   * @param dispatcher - Source dispatcher to override.
+   * @param prefix - Prefix of the dispatcher methods; default: "router".
    * @returns Dispatcher to use.
    */
   public async dispatch(
