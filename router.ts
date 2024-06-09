@@ -17,7 +17,7 @@ import {
 
 import opener from "./opener.ts";
 import type { Handler } from "./types.ts";
-import { commandName } from "./str.ts";
+import { pascalWords } from "./str.ts";
 
 /**
  * Router class defines how a plugin handles each buffer that is named like URL
@@ -313,7 +313,7 @@ export class Router {
     ) => {
       const path = ensure(uPath, is.String);
       const name = maybe(uName, is.String) ||
-        commandName(this.#scheme, "Open", path);
+        pascalWords(this.#scheme, "Open", path);
       await denops.cmd(
         `command -nargs=* ${name} call denops#request('${denops.name}', 'router:command:open', ['${path}', <q-mods>, [<f-args>], ''])`,
       );
