@@ -1,4 +1,4 @@
-import type { Bufname } from "https://deno.land/x/denops_std@v6.5.0/bufname/mod.ts";
+import type { Bufname } from "jsr:@denops/std@7.0.0-pre2/bufname";
 
 export interface Buffer {
   bufnr: number;
