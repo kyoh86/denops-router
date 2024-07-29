@@ -1,19 +1,17 @@
-import type { Denops, Dispatcher } from "jsr:@denops/core@^6.1.0";
-import { ensure, is, maybe } from "jsr:@core/unknownutil@^3.18.1";
-import { batch } from "https://deno.land/x/denops_std@v6.5.1/batch/mod.ts";
-import { kebabToCamel } from "jsr:@kyoh86/denops-bind-params@0.0.3/keycase";
-import * as buffer from "https://deno.land/x/denops_std@v6.5.1/buffer/mod.ts";
-import * as fn from "https://deno.land/x/denops_std@v6.5.1/function/mod.ts";
-import * as vars from "https://deno.land/x/denops_std@v6.5.1/variable/mod.ts";
-import * as option from "https://deno.land/x/denops_std@v6.5.1/option/mod.ts";
+import type { Denops, Dispatcher } from "@denops/core";
+import { ensure, is, maybe } from "@core/unknownutil";
+import { batch } from "@denops/std/batch";
+import { kebabToCamel } from "@kyoh86/denops-bind-params/keycase";
+import * as buffer from "@denops/std/buffer";
+import * as fn from "@denops/std/function";
+import * as vars from "@denops/std/variable";
+import * as option from "@denops/std/option";
 import {
   type BufnameParams,
   format,
   parse as parseAsBufname,
-} from "https://deno.land/x/denops_std@v6.5.1/bufname/mod.ts";
-import {
-  parse as parseArguments,
-} from "https://deno.land/x/denops_std@v6.5.1/argument/mod.ts";
+} from "@denops/std/bufname";
+import { parse as parseArguments } from "@denops/std/argument";
 
 import opener from "./opener.ts";
 import type { Handler } from "./types.ts";

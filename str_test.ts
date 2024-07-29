@@ -1,5 +1,5 @@
 import { pascalWords } from "./str.ts";
-import { assertEquals } from "jsr:@std/assert@^0.225.3";
+import { assertEquals } from "@std/assert";
 
 Deno.test("pascalWords", () => {
   assertEquals(pascalWords("foo", "bar/baz"), "FooBarBaz");
