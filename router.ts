@@ -163,6 +163,36 @@ export class Router {
   }
 
   /**
+   * Preload a buffer with the specified path, parameters, and fragment.
+   * The buffer is handled by the handler that matches the path.
+   * This method can also be called from the dispatched interface: `router:preload`.
+   *
+   * @param denops - Denops instance.
+   * @param path - Path to open.
+   * @param params - Parameters for the buffer name.
+   * @param fragment - Fragment for the buffer name.
+   * @returns Promise that resolves when the buffer is opened.
+   */
+  public async preload(
+    denops: Denops,
+    path: string,
+    params?: BufnameParams,
+    fragment?: string,
+  ) {
+    if (!this.#handlers.has(path) && !this.#defaultHandler) {
+      throw new Error(`There's no handler for a path '${path}'`);
+    }
+    const bufname = format({
+      scheme: this.#scheme,
+      expr: path,
+      params,
+      fragment,
+    });
+    // create new buffer in background and load it
+    await fn.bufload(denops, await fn.bufadd(denops, bufname));
+  }
+
+  /**
    * Set a handler for the specified path.
    *
    * @param path - Path which the handler processes.
@@ -186,11 +216,15 @@ export class Router {
    *
    * The dispatcher will have the following methods:
    * - `router:open`
+   * - `router:preload`
    * - `router:command:open`
    * - `router:action`
    * - `router:setup:command`
    *
    * `router:open` method is used to open a buffer with the specified
+   * path and parameters.
+   *
+   * `router:preload` method is used to preload a buffer with the specified
    * path and parameters.
    *
    * `router:command:open` method is used to open a buffer with the specified
@@ -288,6 +322,32 @@ export class Router {
       const [, params] = parseArguments(args || []);
       const fragment = maybe(uFragment, is.String);
       await this.open(denops, path, mods || "", kebabToCamel(params), fragment);
+    };
+    override[`${prefix}:preload`] = async (
+      uPath: unknown,
+      uParams: unknown,
+      uFragment: unknown,
+    ) => {
+      const path = ensure(uPath, is.String);
+      const params = maybe(
+        uParams,
+        is.RecordOf(
+          is.UnionOf([is.String, is.ArrayOf(is.String), is.Undefined]),
+        ),
+      );
+      const fragment = maybe(uFragment, is.String);
+      await this.preload(denops, path, params, fragment);
+    };
+    override[`${prefix}:command:preload`] = async (
+      uPath: unknown,
+      uArgs: unknown,
+      uFragment: unknown,
+    ) => {
+      const path = ensure(uPath, is.String);
+      const args = maybe(uArgs, is.ArrayOf(is.String));
+      const [, params] = parseArguments(args || []);
+      const fragment = maybe(uFragment, is.String);
+      await this.preload(denops, path, kebabToCamel(params), fragment);
     };
     override[`${prefix}:internal:load`] = async (
       uBuf: unknown,
