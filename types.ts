@@ -8,7 +8,7 @@ export interface Buffer {
 export type Action = (
   buf: Buffer,
   params: Record<string, unknown>,
-) => Promise<void>;
+) => Promise<void> | void;
 
 /*
  * Handler handles buffers that matches the buffer name for the scheme and path.
