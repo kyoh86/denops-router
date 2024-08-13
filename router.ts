@@ -62,10 +62,10 @@ export class Router {
    * It sets the buffer as a special buffer and calls the `load` method of the handler
    * that matches the path.
    *
-   * @param denops - Denops instance.
-   * @param prefix - Prefix for internal command names.
-   * @param abuf - Buffer number.
-   * @param afile - File name.
+   * @param denops Denops instance.
+   * @param prefix Prefix for internal command names.
+   * @param abuf Buffer number.
+   * @param afile File name.
    */ async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
     const { path, bufname, handler } = this.#match(afile);
     await buffer.ensure(denops, abuf, async () => {
@@ -92,9 +92,9 @@ export class Router {
    * This method is called from the auto command `BufWriteCmd` with `<abuf>` and `<afile>`.
    * It searches the handler for the buffer and calls the `save` method of it.
    *
-   * @param denops - Denops instance.
-   * @param abuf - Buffer number.
-   * @param afile - File name.
+   * @param denops Denops instance.
+   * @param abuf Buffer number.
+   * @param afile File name.
    */ async #save(denops: Denops, abuf: number, afile: string) {
     const { bufname, handler } = this.#match(afile);
     if (!handler.save) {
@@ -108,10 +108,10 @@ export class Router {
    * Call an action of the handler bound for the buffer.
    * This method can also be called from the dispatched interface: `router:action`.
    *
-   * @param denops - Denops instance.
-   * @param buf - Target buffer number.
-   * @param actName - Name of the action to be called.
-   * @param params - Parameters for the action. Note that these are not parameters in the buffer name.
+   * @param denops Denops instance.
+   * @param buf Target buffer number.
+   * @param actName Name of the action to be called.
+   * @param params Parameters for the action. Note that these are not parameters in the buffer name.
    * @return Promise<void>
    */
   public async action(
@@ -129,15 +129,43 @@ export class Router {
   }
 
   /**
+   * Get a buffer name with the specified path, parameters, and fragment.
+   *
+   * @param path Path to open.
+   * @param params Parameters for the buffer name.
+   * @param fragment Fragment for the buffer name.
+   * @returns string that a buffer name.
+   */
+  public bufname(path: string, params?: BufnameParams, fragment?: string) {
+    if (!this.#handlers.has(path) && !this.#defaultHandler) {
+      throw new Error(`There's no handler for a path '${path}'`);
+    }
+    return format({
+      scheme: this.#scheme,
+      expr: path,
+      params,
+      fragment,
+    });
+  }
+
+  private async edit(denops: Denops, mods: string, bufname: string) {
+    const edit = opener(mods);
+    await denops.cmd(
+      [mods, edit, await denops.call("fnameescape", bufname)].join(" ").trim(),
+    );
+  }
+
+  /**
    * Open a buffer with the specified path, parameters, and fragment.
    * The buffer is handled by the handler that matches the path.
    * This method can also be called from the dispatched interface: `router:open`.
    *
-   * @param denops - Denops instance.
-   * @param path - Path to open.
-   * @param mods - Modifiers for the `:edit` command.
-   * @param params - Parameters for the buffer name.
-   * @param fragment - Fragment for the buffer name.
+   * @param denops Denops instance.
+   * @param path Path to open.
+   * @param mods Modifiers for the `:edit` command.
+   *             If it contains "horizontal" or "vertical", the window is split first.
+   * @param params Parameters for the buffer name.
+   * @param fragment Fragment for the buffer name.
    * @returns Promise that resolves when the buffer is opened.
    */
   public async open(
@@ -147,19 +175,44 @@ export class Router {
     params?: BufnameParams,
     fragment?: string,
   ) {
-    if (!this.#handlers.has(path) && !this.#defaultHandler) {
-      throw new Error(`There's no handler for a path '${path}'`);
-    }
-    const bufname = format({
-      scheme: this.#scheme,
-      expr: path,
-      params,
-      fragment,
-    });
-    const edit = opener(mods);
-    await denops.cmd(
-      [mods, edit, await denops.call("fnameescape", bufname)].join(" ").trim(),
+    const bufname = this.bufname(path, params, fragment);
+    await this.edit(denops, mods, bufname);
+    return bufname;
+  }
+
+  /**
+   * Open a buffer with the specified path, parameters, and fragment.
+   * If the buffer is already open in a window, focus to that window.
+   *
+   * The buffer is handled by the handler that matches the path.
+   * This method can also be called from the dispatched interface: `router:open`.
+   *
+   * @param denops Denops instance.
+   * @param path Path to open.
+   * @param mods Modifiers for the `:edit` command.
+   *             If it contains "horizontal" or "vertical", the window is split first.
+   * @param params Parameters for the buffer name.
+   * @param fragment Fragment for the buffer name.
+   * @returns Promise that resolves when the buffer is opened.
+   */
+  public async drop(
+    denops: Denops,
+    path: string,
+    mods: string = "",
+    params?: BufnameParams,
+    fragment?: string,
+  ) {
+    const bufname = this.bufname(path, params, fragment);
+    const winid = await fn.bufwinnr(
+      denops,
+      await fn.bufnr(denops, bufname),
     );
+    if (winid < 0) {
+      await this.edit(denops, mods, bufname);
+    } else {
+      await denops.cmd(`${winid} wincmd w`);
+    }
+    return bufname;
   }
 
   /**
@@ -167,10 +220,10 @@ export class Router {
    * The buffer is handled by the handler that matches the path.
    * This method can also be called from the dispatched interface: `router:preload`.
    *
-   * @param denops - Denops instance.
-   * @param path - Path to open.
-   * @param params - Parameters for the buffer name.
-   * @param fragment - Fragment for the buffer name.
+   * @param denops Denops instance.
+   * @param path Path to open.
+   * @param params Parameters for the buffer name.
+   * @param fragment Fragment for the buffer name.
    * @returns Promise that resolves when the buffer is opened.
    */
   public async preload(
@@ -179,24 +232,17 @@ export class Router {
     params?: BufnameParams,
     fragment?: string,
   ) {
-    if (!this.#handlers.has(path) && !this.#defaultHandler) {
-      throw new Error(`There's no handler for a path '${path}'`);
-    }
-    const bufname = format({
-      scheme: this.#scheme,
-      expr: path,
-      params,
-      fragment,
-    });
+    const bufname = this.bufname(path, params, fragment);
     // create new buffer in background and load it
     await fn.bufload(denops, await fn.bufadd(denops, bufname));
+    return bufname;
   }
 
   /**
    * Set a handler for the specified path.
    *
-   * @param path - Path which the handler processes.
-   * @param handler - Handler to handle the buffer.
+   * @param path Path which the handler processes.
+   * @param handler Handler to handle the buffer.
    */
   public handle(path: string, handler: Handler) {
     this.#handlers.set(path, handler);
@@ -205,7 +251,7 @@ export class Router {
   /**
    * Set a handler to handle the buffer when there's no handler matched for the path.
    *
-   * @param handler - Handler to handle the buffer.
+   * @param handler Handler to handle the buffer.
    */
   public handleFallback(handler: Handler) {
     this.#defaultHandler = handler;
@@ -274,8 +320,8 @@ export class Router {
    * " It parses command arguments as parameters for the buffer name.
    * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux
    * ```
-   * @param dispatcher - Source dispatcher to override.
-   * @param prefix - Prefix of the dispatcher methods; default: "router".
+   * @param dispatcher Source dispatcher to override.
+   * @param prefix Prefix of the dispatcher methods; default: "router".
    * @returns Dispatcher to use.
    */
   public async dispatch(
