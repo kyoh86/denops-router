@@ -136,7 +136,11 @@ export class Router {
    * @param fragment Fragment for the buffer name.
    * @returns string that a buffer name.
    */
-  public bufname(path: string, params?: BufnameParams, fragment?: string) {
+  public bufname(
+    path: string,
+    params?: BufnameParams,
+    fragment?: string,
+  ): string {
     if (!this.#handlers.has(path) && !this.#defaultHandler) {
       throw new Error(`There's no handler for a path '${path}'`);
     }
@@ -174,7 +178,7 @@ export class Router {
     mods: string = "",
     params?: BufnameParams,
     fragment?: string,
-  ) {
+  ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
     await this.edit(denops, mods, bufname);
     return bufname;
@@ -201,7 +205,7 @@ export class Router {
     mods: string = "",
     params?: BufnameParams,
     fragment?: string,
-  ) {
+  ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
     const winid = await fn.bufwinnr(
       denops,
@@ -231,7 +235,7 @@ export class Router {
     path: string,
     params?: BufnameParams,
     fragment?: string,
-  ) {
+  ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
     // create new buffer in background and load it
     await fn.bufload(denops, await fn.bufadd(denops, bufname));
