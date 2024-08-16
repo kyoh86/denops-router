@@ -1,41 +1,191 @@
-/**
- * Get the Vim command to open a new window based on the given mods.
- *
- * @param mods The modifiers (see <mods> in Vim help) to determine the window type.
- * @returns The Vim command to open a new window.
- */
-export default function opener(mods: string): string {
-  for (const mod of mods.split(/\s+/).reverse()) {
-    switch (mod) {
-      case "vert":
-        return "vnew";
-      case "verti":
-        return "vnew";
-      case "vertic":
-        return "vnew";
-      case "vertica":
-        return "vnew";
-      case "vertical":
-        return "vnew";
-      case "hor":
-        return "new";
-      case "hori":
-        return "new";
-      case "horiz":
-        return "new";
-      case "horizo":
-        return "new";
-      case "horizon":
-        return "new";
-      case "horizont":
-        return "new";
-      case "horizonta":
-        return "new";
-      case "horizontal":
-        return "new";
+import type { Denops } from "@denops/std";
+import {
+  bufadd,
+  bufload,
+  bufnr,
+  bufwinnr,
+  fnameescape,
+} from "@denops/std/function";
+import { as, is, type Predicate } from "@core/unknownutil";
+
+export type Split =
+  | ""
+  | "none"
+  | "split-top"
+  | "split-above"
+  | "split-below"
+  | "split-bottom"
+  | "split-leftmost"
+  | "split-left"
+  | "split-right"
+  | "split-rightmost"
+  | "split-tab";
+
+export const isSplit = is.UnionOf([
+  is.LiteralOf(""),
+  is.LiteralOf("none"),
+  is.LiteralOf("split-top"),
+  is.LiteralOf("split-above"),
+  is.LiteralOf("split-below"),
+  is.LiteralOf("split-bottom"),
+  is.LiteralOf("split-leftmost"),
+  is.LiteralOf("split-left"),
+  is.LiteralOf("split-right"),
+  is.LiteralOf("split-rightmost"),
+  is.LiteralOf("split-tab"),
+]) satisfies Predicate<Split>;
+
+function opener(split?: Split): string[] {
+  switch (split) {
+    case undefined:
+    case "":
+    case "none":
+      return ["edit"];
+    case "split-top":
+      return ["topleft", "new"];
+    case "split-above":
+      return ["aboveleft", "new"];
+    case "split-below":
+      return ["belowright", "new"];
+    case "split-bottom":
+      return ["botright", "new"];
+    case "split-leftmost":
+      return ["topleft", "vnew"];
+    case "split-left":
+      return ["aboveleft", "vnew"];
+    case "split-right":
+      return ["belowright", "vnew"];
+    case "split-rightmost":
+      return ["botright", "vnew"];
+    case "split-tab":
+      return ["tabnew"];
+  }
+}
+
+export interface Options {
+  split?: Split;
+  reuse?: boolean;
+}
+
+export const isOptions = is.ObjectOf({
+  split: as.Optional(isSplit),
+  reuse: as.Optional(is.Boolean),
+}) satisfies Predicate<Options>;
+
+export function parseMods(mods: string | undefined): Split {
+  if (typeof mods === "undefined" || mods === "") {
+    return "";
+  }
+  const words = mods.split(" ");
+  let split: "" | "tab" | "horizontal" | "vertical" = "";
+  let direction:
+    | ""
+    | "aboveleft"
+    | "leftabove"
+    | "belowright"
+    | "rightbelow"
+    | "topleft"
+    | "botright" = "";
+
+  for (const w of words) {
+    switch (w) {
       case "tab":
-        return "tabnew";
+      case "horizontal":
+      case "vertical":
+        split = w;
+        break;
+      case "aboveleft":
+      case "leftabove":
+      case "belowright":
+      case "rightbelow":
+      case "topleft":
+      case "botright":
+        direction = w;
+        break;
     }
   }
-  return "edit";
+  switch (split) {
+    case "":
+      switch (direction) {
+        case "":
+          return "";
+        case "aboveleft":
+        case "leftabove":
+          return "split-above";
+        case "belowright":
+        case "rightbelow":
+          return "split-below";
+        case "topleft":
+          return "split-top";
+        case "botright":
+          return "split-bottom";
+        default:
+          // dead block
+      }
+      break;
+    case "tab":
+      return "split-tab";
+    case "horizontal":
+      switch (direction) {
+        case "":
+        case "aboveleft":
+        case "leftabove":
+          return "split-above";
+        case "belowright":
+        case "rightbelow":
+          return "split-below";
+        case "topleft":
+          return "split-top";
+        case "botright":
+          return "split-bottom";
+        default:
+          // dead block
+      }
+      break;
+    case "vertical":
+      switch (direction) {
+        case "":
+        case "aboveleft":
+        case "leftabove":
+          return "split-left";
+        case "belowright":
+        case "rightbelow":
+          return "split-right";
+        case "topleft":
+          return "split-leftmost";
+        case "botright":
+          return "split-rightmost";
+        default:
+          // dead block
+      }
+      break;
+  }
+  throw new Error("invalid operation");
+}
+
+function cmd(...t: (string | { toString(): string })[]) {
+  return t.join(" ").trim();
+}
+
+export async function open(
+  denops: Denops,
+  bufname: string,
+  options?: Options,
+) {
+  options ??= {};
+  const winid = options.reuse
+    ? await bufwinnr(
+      denops,
+      await bufnr(denops, bufname),
+    )
+    : -1;
+  await denops.cmd(
+    (winid < 0)
+      ? cmd(...opener(options.split), await fnameescape(denops, bufname))
+      : cmd(winid, "wincmd", "w"),
+  );
+}
+
+export async function preload(denops: Denops, bufname: string) {
+  return await bufload(denops, await bufadd(denops, bufname));
 }

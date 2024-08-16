@@ -1,5 +1,5 @@
 import type { Denops, Dispatcher } from "@denops/core";
-import { ensure, is, maybe } from "@core/unknownutil";
+import { as, ensure, is } from "@core/unknownutil";
 import { batch } from "@denops/std/batch";
 import { kebabToCamel } from "@kyoh86/denops-bind-params/keycase";
 import * as buffer from "@denops/std/buffer";
@@ -13,7 +13,13 @@ import {
 } from "@denops/std/bufname";
 import { parse as parseArguments } from "@denops/std/argument";
 
-import opener from "./opener.ts";
+import {
+  isOptions,
+  open,
+  type Options as OpenOptions,
+  parseMods,
+  preload,
+} from "./opener.ts";
 import type { Handler } from "./types.ts";
 import { pascalWords } from "./str.ts";
 
@@ -152,13 +158,6 @@ export class Router {
     });
   }
 
-  private async edit(denops: Denops, mods: string, bufname: string) {
-    const edit = opener(mods);
-    await denops.cmd(
-      [mods, edit, await denops.call("fnameescape", bufname)].join(" ").trim(),
-    );
-  }
-
   /**
    * Open a buffer with the specified path, parameters, and fragment.
    * The buffer is handled by the handler that matches the path.
@@ -175,47 +174,12 @@ export class Router {
   public async open(
     denops: Denops,
     path: string,
-    mods: string = "",
     params?: BufnameParams,
     fragment?: string,
+    options?: OpenOptions,
   ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
-    await this.edit(denops, mods, bufname);
-    return bufname;
-  }
-
-  /**
-   * Open a buffer with the specified path, parameters, and fragment.
-   * If the buffer is already open in a window, focus to that window.
-   *
-   * The buffer is handled by the handler that matches the path.
-   * This method can also be called from the dispatched interface: `router:open`.
-   *
-   * @param denops Denops instance.
-   * @param path Path to open.
-   * @param mods Modifiers for the `:edit` command.
-   *             If it contains "horizontal" or "vertical", the window is split first.
-   * @param params Parameters for the buffer name.
-   * @param fragment Fragment for the buffer name.
-   * @returns Promise that resolves when the buffer is opened.
-   */
-  public async drop(
-    denops: Denops,
-    path: string,
-    mods: string = "",
-    params?: BufnameParams,
-    fragment?: string,
-  ): Promise<string> {
-    const bufname = this.bufname(path, params, fragment);
-    const winid = await fn.bufwinnr(
-      denops,
-      await fn.bufnr(denops, bufname),
-    );
-    if (winid < 0) {
-      await this.edit(denops, mods, bufname);
-    } else {
-      await denops.cmd(`${winid} wincmd w`);
-    }
+    await open(denops, bufname, options);
     return bufname;
   }
 
@@ -237,8 +201,7 @@ export class Router {
     fragment?: string,
   ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
-    // create new buffer in background and load it
-    await fn.bufload(denops, await fn.bufadd(denops, bufname));
+    await preload(denops, bufname);
     return bufname;
   }
 
@@ -345,20 +308,20 @@ export class Router {
     const override: Dispatcher = {};
     override[`${prefix}:open`] = async (
       uPath: unknown,
-      uMods: unknown,
       uParams: unknown,
       uFragment: unknown,
+      uOptions: unknown,
     ) => {
       const path = ensure(uPath, is.String);
-      const mods = maybe(uMods, is.String);
-      const params = maybe(
+      const params = ensure(
         uParams,
-        is.RecordOf(
-          is.UnionOf([is.String, is.ArrayOf(is.String), is.Undefined]),
-        ),
+        as.Optional(is.RecordOf(
+          as.Optional(is.UnionOf([is.String, is.ArrayOf(is.String)])),
+        )),
       );
-      const fragment = maybe(uFragment, is.String);
-      await this.open(denops, path, mods || "", params, fragment);
+      const fragment = ensure(uFragment, as.Optional(is.String));
+      const options = ensure(uOptions, as.Optional(isOptions));
+      return await this.open(denops, path, params, fragment, options);
     };
     override[`${prefix}:command:open`] = async (
       uPath: unknown,
@@ -367,11 +330,21 @@ export class Router {
       uFragment: unknown,
     ) => {
       const path = ensure(uPath, is.String);
-      const mods = maybe(uMods, is.String);
-      const args = maybe(uArgs, is.ArrayOf(is.String));
-      const [, params] = parseArguments(args || []);
-      const fragment = maybe(uFragment, is.String);
-      await this.open(denops, path, mods || "", kebabToCamel(params), fragment);
+      const mods = ensure(uMods, as.Optional(is.String));
+      const args = ensure(uArgs, as.Optional(is.ArrayOf(is.String)));
+      const [_, flags] = parseArguments(args || []);
+      const fragment = ensure(uFragment, as.Optional(is.String));
+      const { reuseWindow, ...params } = kebabToCamel(flags);
+      await this.open(
+        denops,
+        path,
+        params,
+        fragment,
+        {
+          reuse: typeof reuseWindow !== "undefined",
+          split: parseMods(mods),
+        },
+      );
     };
     override[`${prefix}:preload`] = async (
       uPath: unknown,
@@ -379,13 +352,13 @@ export class Router {
       uFragment: unknown,
     ) => {
       const path = ensure(uPath, is.String);
-      const params = maybe(
+      const params = ensure(
         uParams,
-        is.RecordOf(
-          is.UnionOf([is.String, is.ArrayOf(is.String), is.Undefined]),
-        ),
+        as.Optional(is.RecordOf(
+          as.Optional(is.UnionOf([is.String, is.ArrayOf(is.String)])),
+        )),
       );
-      const fragment = maybe(uFragment, is.String);
+      const fragment = ensure(uFragment, as.Optional(is.String));
       await this.preload(denops, path, params, fragment);
     };
     override[`${prefix}:command:preload`] = async (
@@ -394,9 +367,9 @@ export class Router {
       uFragment: unknown,
     ) => {
       const path = ensure(uPath, is.String);
-      const args = maybe(uArgs, is.ArrayOf(is.String));
+      const args = ensure(uArgs, as.Optional(is.ArrayOf(is.String)));
       const [, params] = parseArguments(args || []);
-      const fragment = maybe(uFragment, is.String);
+      const fragment = ensure(uFragment, as.Optional(is.String));
       await this.preload(denops, path, kebabToCamel(params), fragment);
     };
     override[`${prefix}:internal:load`] = async (
@@ -430,7 +403,7 @@ export class Router {
       uName: unknown,
     ) => {
       const path = ensure(uPath, is.String);
-      const name = maybe(uName, is.String) ||
+      const name = ensure(uName, as.Optional(is.String)) ||
         pascalWords(this.#scheme, "Open", path);
       await denops.cmd(
         `command -nargs=* ${name} call denops#request('${denops.name}', 'router:command:open', ['${path}', <q-mods>, [<f-args>], ''])`,

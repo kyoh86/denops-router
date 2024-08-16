@@ -2,8 +2,7 @@
   "name": "@kyoh86/denops-router",
   "version": "0.2.0",
   "exports": {
-    ".": "./mod.ts",
-    "./opener": "./opener.ts"
+    ".": "./mod.ts"
   },
   "description": "A deno library to handle acwrite files for each buffer",
   "tasks": {

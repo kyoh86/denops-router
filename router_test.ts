@@ -34,8 +34,9 @@ test({
 
     await denops.call("denops#request", denops.name, "router:open", [
       "assert-loaded",
-      "",
       { id: "123" },
+      "",
+      {},
     ]);
     const buffers = ensure(
       await denops.call("getbufinfo", "testB://assert-loaded;id=123"),
@@ -71,9 +72,9 @@ test({
     denops.dispatcher = await r.dispatch(denops, {});
     await denops.call("denops#request", denops.name, "router:open", [
       "assert-loaded",
-      "",
       { id: "123", name: "John" },
       "bar.baz",
+      {},
     ]);
 
     const buffersWithFragment = ensure(
