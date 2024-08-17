@@ -1,6 +1,6 @@
 {
   "name": "@kyoh86/denops-router",
-  "version": "0.2.0",
+  "version": "v0.3.0-alpha.1",
   "exports": {
     ".": "./mod.ts"
   },
