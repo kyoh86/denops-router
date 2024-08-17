@@ -1,4 +1,5 @@
 import type { Bufname } from "@denops/std/bufname";
+import { as, is, type Predicate } from "@core/unknownutil";
 
 export interface Buffer {
   bufnr: number;
@@ -35,3 +36,40 @@ export interface Handler {
    */
   actions?: Record<string, Action>;
 }
+
+export type Split =
+  | ""
+  | "none"
+  | "split-top"
+  | "split-above"
+  | "split-below"
+  | "split-bottom"
+  | "split-leftmost"
+  | "split-left"
+  | "split-right"
+  | "split-rightmost"
+  | "split-tab";
+
+export const isSplit: Predicate<Split> = is.UnionOf([
+  is.LiteralOf(""),
+  is.LiteralOf("none"),
+  is.LiteralOf("split-top"),
+  is.LiteralOf("split-above"),
+  is.LiteralOf("split-below"),
+  is.LiteralOf("split-bottom"),
+  is.LiteralOf("split-leftmost"),
+  is.LiteralOf("split-left"),
+  is.LiteralOf("split-right"),
+  is.LiteralOf("split-rightmost"),
+  is.LiteralOf("split-tab"),
+]);
+
+export interface OpenOption {
+  split?: Split;
+  reuse?: boolean;
+}
+
+export const isOpenOption: Predicate<OpenOption> = is.ObjectOf({
+  split: as.Optional(isSplit),
+  reuse: as.Optional(is.Boolean),
+});

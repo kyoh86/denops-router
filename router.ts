@@ -13,13 +13,8 @@ import {
 } from "@denops/std/bufname";
 import { parse as parseArguments } from "@denops/std/argument";
 
-import {
-  isOptions,
-  open,
-  type Options as OpenOptions,
-  parseMods,
-  preload,
-} from "./opener.ts";
+import { open, parseMods, preload } from "./opener.ts";
+import { isOpenOption, type OpenOption as OpenOption } from "./types.ts";
 import type { Handler } from "./types.ts";
 import { pascalWords } from "./str.ts";
 
@@ -176,7 +171,7 @@ export class Router {
     path: string,
     params?: BufnameParams,
     fragment?: string,
-    options?: OpenOptions,
+    options?: OpenOption,
   ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
     await open(denops, bufname, options);
@@ -320,7 +315,7 @@ export class Router {
         )),
       );
       const fragment = ensure(uFragment, as.Optional(is.String));
-      const options = ensure(uOptions, as.Optional(isOptions));
+      const options = ensure(uOptions, as.Optional(isOpenOption));
       return await this.open(denops, path, params, fragment, options);
     };
     override[`${prefix}:command:open`] = async (
