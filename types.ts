@@ -64,8 +64,16 @@ export const isSplit: Predicate<Split> = is.UnionOf([
   is.LiteralOf("split-tab"),
 ]);
 
+/**
+ * Options to change a behavior of attaching a buffer to a window.
+ */
 export interface BufferOpener {
+  /** If the buffer is already atached in any window, focus it. */
   reuse?: boolean;
+  /**
+   * Before the buffer is attached in the window, split the window in this way.
+   * The "none" means that the buffer is attached in the current window.
+   */
   split?: Split;
 }
 

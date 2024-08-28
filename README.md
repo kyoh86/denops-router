@@ -4,19 +4,19 @@ This is a deno library for denops.vim as a router and a dispatcher for acwrite b
 
 ## What's this?
 
-A router handles acwrite buffers in the Vim/Neovim.
+A router handles acwrite buffers (i.e. virtual buffer) in the Vim/Neovim.
 It handles buffers having a name under the specific schema (like `foo://`).
 And attaches a handler mathcing for each path of the buffer name (like `foo://bar`).
 
 Handlers should:
 
 - Loading content
-- Saving content if you needed
+- Saving content if we need
 - Providing optional action
 
 ## Usage
 
-If we want to create a special buffers like below:
+If we want to create a virtual buffers like below:
 
 - `diary://new`
     - Create a new diary
@@ -76,22 +76,48 @@ export const main: Entrypoint = async (denops) => {
 }
 ```
 
-Then, if we open the buffer matching the router, handlers may be called.
+Then, if we open the virtual buffer, handlers may be called.
+
+## Buffer name
+
+Virtual buffers handled by the router, has a name formed:
+
+`<schema>://<path>;<param1>=<value1>&<param2>=<value2>#<fragment>`
+
+The router matches the name for each router only by `<path>` and parameters and the fragment in the name will be passed to the handler.
+
+See for detail: https://jsr.io/@denops/std/doc/bufname/~
 
 ## Denops API functions
 
 The router provides denops API functions:
 
 - `router:open`
-    - Open the buffer handled by the router.
+    - Open a virtual buffer.
+    - Parameters:
+        - `path: string`
+            - A *path* part of the name of the buffer.
+        - `params?: Record<string, string|string[]>`
+            - A *parameter* part of the name of the buffer.
+        - `fragment?: string`
+            - A *fragment* part of the name of the buffer.
+        - `opener?: BufferOpener`
+            - Options to change a behavior of attaching a buffer to a window.
+            - See for detail: a document for the "BufferOpener" interface.
+- `router:preload`
+    - Load a virtual buffer in background.
     - Parameters:
         - `path: string`
         - `params?: Record<string, string|string[]>`
         - `fragment?: string`
-        - `opener?: BufferOpener`
-- `router:preload`
-    - 
 - `router:action`
+    - Call the custom action of the handler attached for the buffer.
+        - `buf: number`
+            - A number of the target buffer.
+        - `act: string`
+            - A name of the action to call.
+        - `params: Record`
+            - A set of the parameters for the action.
 
 And the some internal API functions:
 
@@ -99,8 +125,6 @@ And the some internal API functions:
     - It will be called when the buffer handled the router is opened.
 - `router:internal:save`
     - It will be called when the buffer handled the router is saved.
-
-See for detail, see the document of the "Router" class.
 
 # License
 
