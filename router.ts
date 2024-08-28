@@ -1,7 +1,6 @@
 import type { Denops, Dispatcher } from "@denops/core";
 import { as, ensure, is } from "@core/unknownutil";
 import { batch } from "@denops/std/batch";
-import { kebabToCamel } from "@kyoh86/denops-bind-params/keycase";
 import * as buffer from "@denops/std/buffer";
 import * as fn from "@denops/std/function";
 import * as vars from "@denops/std/variable";
@@ -11,12 +10,10 @@ import {
   format,
   parse as parseAsBufname,
 } from "@denops/std/bufname";
-import { parse as parseArguments } from "@denops/std/argument";
 
-import { open, parseMods, preload } from "./opener.ts";
-import { isOpenOption, type OpenOption as OpenOption } from "./types.ts";
+import { open, preload } from "./opener.ts";
+import { type BufferOpener as BufferOpener, isBufferOpener } from "./types.ts";
 import type { Handler } from "./types.ts";
-import { pascalWords } from "./str.ts";
 
 /**
  * `Router` class defines how a Denops plugin handles each buffer that is named
@@ -64,7 +61,7 @@ export class Router {
    * that matches the path.
    *
    * @param denops Denops instance.
-   * @param prefix Prefix for internal command names.
+   * @param prefix Prefix for internal denops dispatched command names.
    * @param abuf Buffer number.
    * @param afile File name.
    */ async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
@@ -154,16 +151,15 @@ export class Router {
   }
 
   /**
-   * Open a buffer with the specified path, parameters, and fragment.
+   * Open a buffer for the path, parameters and fragment.
    * The buffer is handled by the handler that matches the path.
    * This method can also be called from the dispatched interface: `router:open`.
    *
    * @param denops Denops instance.
    * @param path Path to open.
-   * @param mods Modifiers for the `:edit` command.
-   *             If it contains "horizontal" or "vertical", the window is split first.
    * @param params Parameters for the buffer name.
    * @param fragment Fragment for the buffer name.
+   * @param opener Options to decide window selector.
    * @returns Promise that resolves when the buffer is opened.
    */
   public async open(
@@ -171,10 +167,10 @@ export class Router {
     path: string,
     params?: BufnameParams,
     fragment?: string,
-    options?: OpenOption,
+    opener?: BufferOpener,
   ): Promise<string> {
     const bufname = this.bufname(path, params, fragment);
-    await open(denops, bufname, options);
+    await open(denops, bufname, opener);
     return bufname;
   }
 
@@ -225,9 +221,7 @@ export class Router {
    * The dispatcher will have the following methods:
    * - `router:open`
    * - `router:preload`
-   * - `router:command:open`
    * - `router:action`
-   * - `router:setup:command`
    *
    * `router:open` method is used to open a buffer with the specified
    * path and parameters.
@@ -235,17 +229,20 @@ export class Router {
    * `router:preload` method is used to preload a buffer with the specified
    * path and parameters.
    *
-   * `router:command:open` method is used to open a buffer with the specified
-   * path and command-arguments (using `<f-args>`).
-   *
    * `router:action` method is used to call the action of the handler.
-   *
-   * `router:setup:command` method is used to set up a command for opening a buffer.
    *
    * @example
    * ```typescript
-   * export async function main(denops: Denops) {
+   * import type { Entrypoint } from "@denops/std";
+   * import { Router } from "@kyoh86/denops-router";
+   *
+   * export const main: Entrypoint = async (denops) => {
+   *   denops.dispatcher = {
+   *       // ...
+   *   }
+   *
    *   const r = new Router("foo");
+   *
    *   r.handle("path/to/foo", {
    *     load: async (loc) => {
    *       await denops.cmd(`echo "Read foo: ${loc.bufname}"`);
@@ -254,22 +251,25 @@ export class Router {
    *       await denops.cmd(`echo "Saving foo: ${loc.bufname}"`);
    *     },
    *   });
+   *
    *   r.handle("path/to/bar", {
    *     load: async (loc) => {
-   *       await denops.cmd(`echo "Read bar: ${loc.name}"`);
+   *       await denops.cmd(`echo "Read bar: ${loc.bufname}"`);
    *       await denops.cmd(
    *         `nnoremap <buffer> <silent> <space> <CMD>call denops#notify('${denops.name}', 'router:action', [bufnr('%'), 'play', {}])<CR>`,
    *       );
    *     },
    *     actions: {
    *       play: async (loc, _params) => {
-   *         await denops.cmd(`echo "Action 'play' in bar: ${loc.name}"`);
+   *         await denops.cmd(`echo "Action 'play' in bar: ${loc.bufname}"`);
    *       },
    *     },
    *   });
-   *   denops.dispatcher = await r.dispatch(denops, {});
+   *
+   *   denops.dispatcher = await r.dispatch(denops, denops.dispatcher);
    * }
    * ```
+   *
    * ```vim
    * " Call 'router:open' for the handler 'foo-handler' with a parameter.
    * call denops#notify('plugin-name', 'router:open', ['path/to/foo', 'vertical', {'param1': 'bar'}, '.baz'])
@@ -277,10 +277,6 @@ export class Router {
    * " and the handler 'foo-handler' is called when the buffer is loaded.
    * " The buffer has a buftype 'acwrite' to save by the 'save' method of the handler.
    *
-   * " Calling the handler from command, we can use 'router:command:open' API.
-   * command! -nargs=* Foo call denops#notify('plugin-name', 'router:command:open', ['path/to/foo', <q-mods>, [<f-args>], ''])
-   * " It parses command arguments as parameters for the buffer name.
-   * " For example, `:Foo --bar=baz --qux=quux` opens foo://path/to/foo;bar=baz&qux=quux
    * ```
    * @param dispatcher Source dispatcher to override.
    * @param prefix Prefix of the dispatcher methods; default: "router".
@@ -305,7 +301,7 @@ export class Router {
       uPath: unknown,
       uParams: unknown,
       uFragment: unknown,
-      uOptions: unknown,
+      uOpener: unknown,
     ) => {
       const path = ensure(uPath, is.String);
       const params = ensure(
@@ -315,31 +311,8 @@ export class Router {
         )),
       );
       const fragment = ensure(uFragment, as.Optional(is.String));
-      const options = ensure(uOptions, as.Optional(isOpenOption));
-      return await this.open(denops, path, params, fragment, options);
-    };
-    override[`${prefix}:command:open`] = async (
-      uPath: unknown,
-      uMods: unknown,
-      uArgs: unknown,
-      uFragment: unknown,
-    ) => {
-      const path = ensure(uPath, is.String);
-      const mods = ensure(uMods, as.Optional(is.String));
-      const args = ensure(uArgs, as.Optional(is.ArrayOf(is.String)));
-      const [_, flags] = parseArguments(args || []);
-      const fragment = ensure(uFragment, as.Optional(is.String));
-      const { reuseWindow, ...params } = kebabToCamel(flags);
-      await this.open(
-        denops,
-        path,
-        params,
-        fragment,
-        {
-          reuse: typeof reuseWindow !== "undefined",
-          split: parseMods(mods),
-        },
-      );
+      const opener = ensure(uOpener, as.Optional(isBufferOpener));
+      return await this.open(denops, path, params, fragment, opener);
     };
     override[`${prefix}:preload`] = async (
       uPath: unknown,
@@ -355,17 +328,6 @@ export class Router {
       );
       const fragment = ensure(uFragment, as.Optional(is.String));
       await this.preload(denops, path, params, fragment);
-    };
-    override[`${prefix}:command:preload`] = async (
-      uPath: unknown,
-      uArgs: unknown,
-      uFragment: unknown,
-    ) => {
-      const path = ensure(uPath, is.String);
-      const args = ensure(uArgs, as.Optional(is.ArrayOf(is.String)));
-      const [, params] = parseArguments(args || []);
-      const fragment = ensure(uFragment, as.Optional(is.String));
-      await this.preload(denops, path, kebabToCamel(params), fragment);
     };
     override[`${prefix}:internal:load`] = async (
       uBuf: unknown,
@@ -392,17 +354,6 @@ export class Router {
       const act = ensure(uAct, is.String);
       const params = ensure(uParams, is.Record);
       await this.action(denops, buf, act, params);
-    };
-    override[`${prefix}:setup:command`] = async (
-      uPath: unknown,
-      uName: unknown,
-    ) => {
-      const path = ensure(uPath, is.String);
-      const name = ensure(uName, as.Optional(is.String)) ||
-        pascalWords(this.#scheme, "Open", path);
-      await denops.cmd(
-        `command -nargs=* ${name} call denops#request('${denops.name}', 'router:command:open', ['${path}', <q-mods>, [<f-args>], ''])`,
-      );
     };
     return { ...dispatcher, ...override };
   }

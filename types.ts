@@ -64,12 +64,12 @@ export const isSplit: Predicate<Split> = is.UnionOf([
   is.LiteralOf("split-tab"),
 ]);
 
-export interface OpenOption {
-  split?: Split;
+export interface BufferOpener {
   reuse?: boolean;
+  split?: Split;
 }
 
-export const isOpenOption: Predicate<OpenOption> = is.ObjectOf({
+export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
   split: as.Optional(isSplit),
   reuse: as.Optional(is.Boolean),
 });

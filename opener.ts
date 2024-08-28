@@ -6,9 +6,9 @@ import {
   bufwinnr,
   fnameescape,
 } from "@denops/std/function";
-import type { OpenOption, Split } from "./types.ts";
+import type { BufferOpener, Split } from "./types.ts";
 
-function opener(split?: Split): string[] {
+function openCommand(split?: Split): string[] {
   switch (split) {
     case undefined:
     case "":
@@ -126,17 +126,17 @@ export function parseMods(mods: string | undefined): Split {
   throw new Error("invalid operation");
 }
 
-function cmd(...t: (string | { toString(): string })[]) {
+function joinCommand(...t: (string | { toString(): string })[]) {
   return t.join(" ").trim();
 }
 
 export async function open(
   denops: Denops,
   bufname: string,
-  options?: OpenOption,
+  opener?: BufferOpener,
 ) {
-  options ??= {};
-  const winid = options.reuse
+  opener ??= {};
+  const winid = opener.reuse
     ? await bufwinnr(
       denops,
       await bufnr(denops, bufname),
@@ -144,8 +144,11 @@ export async function open(
     : -1;
   await denops.cmd(
     (winid < 0)
-      ? cmd(...opener(options.split), await fnameescape(denops, bufname))
-      : cmd(winid, "wincmd", "w"),
+      ? joinCommand(
+        ...openCommand(opener.split),
+        await fnameescape(denops, bufname),
+      )
+      : joinCommand(winid, "wincmd", "w"),
   );
 }
 
