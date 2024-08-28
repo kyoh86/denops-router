@@ -1,134 +1,138 @@
 # denops-router
 
-This is a deno library for denops.vim as a router and a dispatcher for acwrite buffers.
+This is a Deno library for denops.vim, serving as a router and dispatcher for
+acwrite buffers.
 
 ## What's this?
 
-A router handles acwrite buffers (i.e. virtual buffer) in the Vim/Neovim.
-It handles buffers having a name under the specific schema (like `foo://`).
-And attaches a handler mathcing for each path of the buffer name (like `foo://bar`).
+A router manages acwrite buffers (i.e., virtual buffers) in Vim/Neovim. It
+handles buffers with names following a specific schema (like `foo://`). It then
+assigns a handler matching each path of the buffer name (e.g., `foo://bar`).
 
-Handlers should:
+Handlers are responsible for:
 
 - Loading content
-- Saving content if we need
-- Providing optional action
+- Saving content if needed
+- Providing optional actions
 
 ## Usage
 
-If we want to create a virtual buffers like below:
+If we want to create virtual buffers like the following:
 
 - `diary://new`
-    - Create a new diary
-    - Saving the diary
+  - Creates a new diary
+  - Saves the diary
 - `diary://list`
-    - Show a list of the diaries
-    - Open a diary
+  - Shows a list of diaries
+  - Opens a diary
 - `diary://view`
-    - Show a diary
-    - Saving the diary
+  - Displays a diary
+  - Saves the diary
 
-We should create a router and attach some handlers for each buffer path.
-And we must dispatch the router to denops dispatcher:
+We should create a router and attach handlers for each buffer path. Then, we
+need to dispatch the router to the denops dispatcher:
 
 ```typescript
 import { Router } from "@kyoh86/denops-router";
 import type { Entrypoint } from "@denops/std";
 
 export const main: Entrypoint = async (denops) => {
-    denops.dispatcher = {
+  denops.dispatcher = {
+    // ...
+  };
+
+  const router = new Router("diary");
+
+  router.handle("new", { // path: `new`
+    load: async (buf) => {
+      // ...
+    },
+    save: async (buf) => {
+      // ...
+    },
+  });
+
+  router.handle("list", { // path: `list`
+    load: async (buf) => {
+      // ...
+    },
+    actions: {
+      open: (_, params) => {
         // ...
-    }
+      },
+    },
+  });
 
-    const router = new Router("diary");
+  router.handle("view", { // path: `view`
+    load: async (buf) => {
+      // ...
+    },
+    save: async (buf) => {
+      // ...
+    },
+  });
 
-    router.handle("new", {  // path: `new`
-        load: async (buf) => {
-            // ...
-        },
-        save: async (buf) => {
-            // ...
-        },
-    });
-
-    router.handle("list", { // path: `list`
-        load: async (buf) => {
-            // ...
-        },
-        actions: {
-            open: (_, params) => {
-                // ...
-            }
-          ,
-        },
-    });
-
-    router.handle("view", { // path: `view`
-        load: async (buf) => {
-            // ...
-        },
-        save: async (buf) => {
-            // ...
-        },
-    });
-
-    denops.dispatcher = await router.dispatch(denops, denops.dispatcher);
-}
+  denops.dispatcher = await router.dispatch(denops, denops.dispatcher);
+};
 ```
 
-Then, if we open the virtual buffer, handlers may be called.
+Once a virtual buffer is opened, the corresponding handlers will be invoked.
 
 ## Buffer name
 
-Virtual buffers handled by the router, has a name formed:
+Virtual buffers managed by the router have names formed as follows:
 
 `<schema>://<path>;<param1>=<value1>&<param2>=<value2>#<fragment>`
 
-The router matches the name for each router only by `<path>` and parameters and the fragment in the name will be passed to the handler.
+The router matches the buffer names based on the `<path>`, while the parameters
+and fragments are passed to the handler.
 
-See for detail: https://jsr.io/@denops/std/doc/bufname/~
+For more details, see
+[a document for `bufname` module in the @denops/std](https://jsr.io/@denops/std/doc/bufname/~)
 
 ## Denops API functions
 
-The router provides denops API functions:
+The router provides the following denops API functions:
 
 - `router:open`
-    - Open a virtual buffer.
-    - Parameters:
-        - `path: string`
-            - A *path* part of the name of the buffer.
-        - `params?: Record<string, string|string[]>`
-            - A *parameter* part of the name of the buffer.
-        - `fragment?: string`
-            - A *fragment* part of the name of the buffer.
-        - `opener?: BufferOpener`
-            - Options to change a behavior of attaching a buffer to a window.
-            - See for detail: a document for the "BufferOpener" interface.
+  - Opens a virtual buffer.
+  - Parameters:
+    - `path: string`
+      - The _path_ part of the buffer name.
+    - `params?: Record<string, string|string[]>`
+      - The _parameters_ part of the buffer name.
+    - `fragment?: string`
+      - The _fragment_ part of the buffer name.
+    - `opener?: BufferOpener`
+      - Options for how to attach the buffer to a window.
+      - For details, refer to the "BufferOpener" interface documentation.
 - `router:preload`
-    - Load a virtual buffer in background.
-    - Parameters:
-        - `path: string`
-        - `params?: Record<string, string|string[]>`
-        - `fragment?: string`
+  - Loads a virtual buffer in the background.
+  - Parameters:
+    - `path: string`
+    - `params?: Record<string, string|string[]>`
+    - `fragment?: string`
 - `router:action`
-    - Call the custom action of the handler attached for the buffer.
-        - `buf: number`
-            - A number of the target buffer.
-        - `act: string`
-            - A name of the action to call.
-        - `params: Record`
-            - A set of the parameters for the action.
+  - Calls a custom action of the handler attached to the buffer.
+  - Parameters:
+    - `buf: number`
+      - The buffer number of the target.
+    - `act: string`
+      - The name of the action to call.
+    - `params: Record<string, any>`
+      - A set of parameters for the action.
 
-And the some internal API functions:
+Additionally, there are some internal API functions:
 
 - `router:internal:load`
-    - It will be called when the buffer handled the router is opened.
+  - Called when the buffer managed by the router is opened.
 - `router:internal:save`
-    - It will be called when the buffer handled the router is saved.
+  - Called when the buffer managed by the router is saved.
 
-# License
+## License
 
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg)](http://www.opensource.org/licenses/MIT)
 
 This software is released under the
-[MIT License](http://www.opensource.org/licenses/MIT), see LICENSE.
+[MIT License](http://www.opensource.org/licenses/MIT). See LICENSE for more
+information.
