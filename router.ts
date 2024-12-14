@@ -64,7 +64,8 @@ export class Router {
    * @param prefix Prefix for internal denops dispatched command names.
    * @param abuf Buffer number.
    * @param afile File name.
-   */ async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
+   */
+  async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
     const { path, bufname, handler } = this.#match(afile);
     await buffer.ensure(denops, abuf, async () => {
       await batch(denops, async (denops) => {
@@ -93,7 +94,8 @@ export class Router {
    * @param denops Denops instance.
    * @param abuf Buffer number.
    * @param afile File name.
-   */ async #save(denops: Denops, abuf: number, afile: string) {
+   */
+  async #save(denops: Denops, abuf: number, afile: string) {
     const { bufname, handler } = this.#match(afile);
     if (!handler.save) {
       throw new Error(`There's no valid writable handler for ${afile}`);

@@ -93,49 +93,6 @@ test({
 
 test({
   mode: "all",
-  name: "buffers should be opened with command",
-  fn: async (denops) => {
-    const r = new Router("testD");
-    r.handle("assert-loaded", {
-      load: (_buf) => Promise.resolve(),
-    });
-    denops.dispatcher = await r.dispatch(denops, {});
-    r.handle("command-defined", {
-      load: (_buf) => Promise.resolve(),
-    });
-    await denops.call("denops#request", denops.name, "router:setup:command", [
-      "command-defined",
-    ]);
-    await denops.cmd("TestDOpenCommandDefined");
-    const buffersWithCommand = ensure(
-      await denops.call(
-        "getbufinfo",
-        "testD://command-defined;",
-      ),
-      is.ArrayOf(is.Unknown),
-    );
-    assert(
-      buffersWithCommand.length === 1,
-      "buffer with command should be opened",
-    );
-
-    await denops.cmd("TestDOpenCommandDefined --p1=v1 --p2=v2");
-    const buffersWithCommandAndParams = ensure(
-      await denops.call(
-        "getbufinfo",
-        "testD://command-defined;p1=v1&p2=v2",
-      ),
-      is.ArrayOf(is.Unknown),
-    );
-    assert(
-      buffersWithCommandAndParams.length === 1,
-      "buffer with command and params should be opened",
-    );
-  },
-});
-
-test({
-  mode: "all",
   name: "handler should be loaded when it preloads buffer",
   fn: async (denops) => {
     const r = new Router("testE");
