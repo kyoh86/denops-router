@@ -4,7 +4,7 @@
   "exports": {
     ".": "./mod.ts"
   },
-  "description": "A deno library to handle acwrite files for each buffer",
+  "description": "This is a Deno library for denops.vim, serving as a router and dispatcher for acwrite buffers",
   "tasks": {
     "test": "deno test --allow-env=DENOPS_TEST_CONNECT_TIMEOUT,DENOPS_TEST_DENOPS_PATH,DENOPS_TEST_VERBOSE,DENOPS_TEST_VIM_EXECUTABLE,DENOPS_TEST_NVIM_EXECUTABLE --allow-run=vim,nvim --allow-net=127.0.0.1:0 --allow-read",
     "check": "deno check ./**/*.ts",
