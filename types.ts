@@ -21,7 +21,7 @@ export type Action = (
   params: Record<string, unknown>,
 ) => Promise<void> | void;
 
-/*
+/**
  * Handler handles buffers that matches the buffer name for the scheme and path.
  *
  * Creating new buffer for them, handlers are able to generate the name with `bufname` method.
