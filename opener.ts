@@ -1,12 +1,73 @@
 import type { Denops } from "@denops/std";
-import {
-  bufadd,
-  bufload,
-  bufnr,
-  bufwinnr,
-  fnameescape,
-} from "@denops/std/function";
-import type { BufferOpener, Split } from "./types.ts";
+import * as fn from "@denops/std/function";
+import { as, is, type Predicate } from "@core/unknownutil";
+
+/**
+ * Split direction of a window.
+ */
+export type Split =
+  | ""
+  | "none"
+  | "split-top"
+  | "split-above"
+  | "split-below"
+  | "split-bottom"
+  | "split-leftmost"
+  | "split-left"
+  | "split-right"
+  | "split-rightmost"
+  | "split-tab";
+
+/**
+ * Predicate for unknownutil to ensure {@link Split}.
+ * @param x The unknown value to check.
+ * @return `true` if the value is {@link Split}.
+ * @example
+ * ```typescript
+ * const x: unknown = "split-top";
+ * const split = ensure(x, isSplit); // split is Split
+ * ```
+ */
+export const isSplit: Predicate<Split> = is.UnionOf([
+  is.LiteralOf(""),
+  is.LiteralOf("none"),
+  is.LiteralOf("split-top"),
+  is.LiteralOf("split-above"),
+  is.LiteralOf("split-below"),
+  is.LiteralOf("split-bottom"),
+  is.LiteralOf("split-leftmost"),
+  is.LiteralOf("split-left"),
+  is.LiteralOf("split-right"),
+  is.LiteralOf("split-rightmost"),
+  is.LiteralOf("split-tab"),
+]);
+
+/**
+ * Options to change a behavior of attaching a buffer to a window.
+ * The buffer is attached to the window by `:edit` command.
+ * @property {boolean} reuse If the buffer is already atached in any window, focus it.
+ * @property {Split} split Before the buffer is attached in the window, split the window in this way.
+ * The "none" means that the buffer is attached in the current window.
+ */
+export interface BufferOpener {
+  reuse?: boolean;
+  split?: Split;
+}
+
+/**
+ * Predicate for unknownutil to ensure {@link BufferOpener}.
+ * @param x The unknown value to check.
+ * @return `true` if the value is {@link BufferOpener}.
+ * @example
+ * ```typescript
+ * const x: unknown = { reuse: true, split: "split-top" };
+ * const opener = ensure(x, isBufferOpener); // opener is BufferOpener
+ * ```
+ */
+export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
+  split: as.Optional(isSplit),
+  reuse: as.Optional(is.Boolean),
+});
 
 function openCommand(split?: Split): string[] {
   switch (split) {
@@ -35,6 +96,11 @@ function openCommand(split?: Split): string[] {
   }
 }
 
+/**
+ * Parse Vim's command modifiers (like :aboveleft, :vertical, etc.) to {@link Split}.
+ * @param {string|unedefined} mods Vim's command modifiers joined by spaces
+ * @return {@link Split}
+ */
 export function parseMods(mods: string | undefined): Split {
   if (typeof mods === "undefined" || mods === "") {
     return "";
@@ -130,6 +196,12 @@ function joinCommand(...t: (string | { toString(): string })[]) {
   return t.join(" ").trim();
 }
 
+/**
+ * Open a buffer in a window.
+ * @param {Denops} denops Denops instance
+ * @param {string} bufname Buffer name to open
+ * @param {BufferOpener} opener Options to open the buffer
+ */
 export async function open(
   denops: Denops,
   bufname: string,
@@ -137,21 +209,27 @@ export async function open(
 ) {
   opener ??= {};
   const winid = opener.reuse
-    ? await bufwinnr(
+    ? await fn.bufwinnr(
       denops,
-      await bufnr(denops, bufname),
+      await fn.bufnr(denops, bufname),
     )
     : -1;
   await denops.cmd(
     (winid < 0)
       ? joinCommand(
         ...openCommand(opener.split),
-        await fnameescape(denops, bufname),
+        await fn.fnameescape(denops, bufname),
       )
       : joinCommand(winid, "wincmd", "w"),
   );
 }
 
-export async function preload(denops: Denops, bufname: string) {
-  return await bufload(denops, await bufadd(denops, bufname));
+/**
+ * Preload a buffer in a window.
+ * @param {Denops} denops Denops instance
+ * @param {string} bufname Buffer name to preload
+ * @return {Promise<void>}
+ */
+export async function preload(denops: Denops, bufname: string): Promise<void> {
+  return await fn.bufload(denops, await fn.bufadd(denops, bufname));
 }

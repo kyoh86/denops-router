@@ -11,8 +11,12 @@ import {
   parse as parseAsBufname,
 } from "@denops/std/bufname";
 
-import { open, preload } from "./opener.ts";
-import { type BufferOpener as BufferOpener, isBufferOpener } from "./types.ts";
+import {
+  type BufferOpener as BufferOpener,
+  isBufferOpener,
+  open,
+  preload,
+} from "./opener.ts";
 import type { Handler } from "./types.ts";
 
 /**

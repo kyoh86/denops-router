@@ -1,11 +1,21 @@
 import type { Bufname } from "@denops/std/bufname";
-import { as, is, type Predicate } from "@core/unknownutil";
 
+/**
+ * Buffer represents a buffer.
+ * @property bufnr Buffer number.
+ * @property bufname Parsed buffer name.
+ */
 export interface Buffer {
   bufnr: number;
   bufname: Bufname;
 }
 
+/**
+ * An Action is a function that performs some kind of action on the buffer.
+ * @param buf Buffer to perform the action.
+ * @param params Parameters for the action.
+ * @returns Promise that resolves when the action is completed.
+ */
 export type Action = (
   buf: Buffer,
   params: Record<string, unknown>,
@@ -36,48 +46,3 @@ export interface Handler {
    */
   actions?: Record<string, Action>;
 }
-
-export type Split =
-  | ""
-  | "none"
-  | "split-top"
-  | "split-above"
-  | "split-below"
-  | "split-bottom"
-  | "split-leftmost"
-  | "split-left"
-  | "split-right"
-  | "split-rightmost"
-  | "split-tab";
-
-export const isSplit: Predicate<Split> = is.UnionOf([
-  is.LiteralOf(""),
-  is.LiteralOf("none"),
-  is.LiteralOf("split-top"),
-  is.LiteralOf("split-above"),
-  is.LiteralOf("split-below"),
-  is.LiteralOf("split-bottom"),
-  is.LiteralOf("split-leftmost"),
-  is.LiteralOf("split-left"),
-  is.LiteralOf("split-right"),
-  is.LiteralOf("split-rightmost"),
-  is.LiteralOf("split-tab"),
-]);
-
-/**
- * Options to change a behavior of attaching a buffer to a window.
- */
-export interface BufferOpener {
-  /** If the buffer is already atached in any window, focus it. */
-  reuse?: boolean;
-  /**
-   * Before the buffer is attached in the window, split the window in this way.
-   * The "none" means that the buffer is attached in the current window.
-   */
-  split?: Split;
-}
-
-export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
-  split: as.Optional(isSplit),
-  reuse: as.Optional(is.Boolean),
-});
