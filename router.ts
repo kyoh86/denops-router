@@ -77,7 +77,6 @@ export class Router {
         await vars.b.set(denops, "denops_router_handler_path", path); // A marker for the handler kind: now it's used just for the test
         await option.swapfile.setLocal(denops, false);
         await option.modified.setLocal(denops, false);
-        await option.bufhidden.setLocal(denops, "wipe");
         if (handler.save) {
           await denops.cmd(
             `autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])`,
