@@ -72,6 +72,8 @@ export class Router {
    * It sets the buffer as a special buffer and calls the `load` method of the handler
    * that matches the path.
    *
+   * If an error occurs, the buffer will be set as a read-only buffer with an error message.
+   *
    * @param denops Denops instance.
    * @param prefix Prefix for internal denops dispatched command names.
    * @param abuf Buffer number.
@@ -83,7 +85,42 @@ export class Router {
     prefix: string,
     abuf: number,
     afile: string,
-  ) {
+  ): Promise<void> {
+    try {
+      return await this.#loadBufferCore(denops, prefix, abuf, afile);
+    } catch (e) {
+      await buffer.replace(denops, abuf, [`${e}`]);
+      await buffer.ensure(denops, abuf, async () => {
+        await option.modifiable.setLocal(denops, false);
+        await option.readonly.setLocal(denops, true);
+        await denops.cmd(`setlocal filetype=denops-router-error`);
+        // ハイライト設定を追加します
+        await denops.cmd(`
+          syntax clear
+          syntax match Error /\\v.+/
+             highlight link Error ErrorMsg
+        `);
+      });
+    }
+  }
+
+  /**
+   * This method is called from the auto command `BufReadCmd` with `<abuf>` and `<afile>`.
+   * It sets the buffer as a special buffer and calls the `load` method of the handler
+   * that matches the path.
+   *
+   * @param denops Denops instance.
+   * @param prefix Prefix for internal denops dispatched command names.
+   * @param abuf Buffer number.
+   * @param afile File name.
+   * @returns Promise<void>
+   */
+  async #loadBufferCore(
+    denops: Denops,
+    prefix: string,
+    abuf: number,
+    afile: string,
+  ): Promise<void> {
     const { path, bufname, handler } = this.#findHandler(afile);
     await buffer.ensure(denops, abuf, async () => {
       await batch(denops, async (denops) => {
@@ -103,7 +140,6 @@ export class Router {
       });
     });
   }
-
   /**
    * This method is called from the auto command `BufWriteCmd` with `<abuf>` and `<afile>`.
    * It searches the handler for the buffer and calls the `save` method of it.
