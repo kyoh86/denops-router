@@ -244,7 +244,7 @@ export class Router {
   /**
    * @deprecated Use `addHandler` instead.
    */
-  public handle(path: string, handler: Handler) {
+  public handle(path: string, handler: Handler): void {
     return this.addHandler(path, handler);
   }
 
@@ -255,7 +255,7 @@ export class Router {
    * @param handler Handler to handle the buffer.
    * @returns void
    */
-  public addHandler(path: string, handler: Handler) {
+  public addHandler(path: string, handler: Handler): void {
     this.#handlers.set(path, handler);
   }
 
