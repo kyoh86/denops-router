@@ -30,12 +30,14 @@ import type { Handler } from "./types.ts";
  * The router selects the handler by the path and passes parameters and a fragment to it.
  */
 export class Router {
-  #handlers: Map<string, Handler>;
   #scheme: string;
+  #handlers: Map<string, Handler> = new Map();
   #fallbackHandler?: Handler;
 
   constructor(scheme: string) {
-    this.#handlers = new Map();
+    if (!scheme) {
+      throw new Error("Scheme must be a non-empty string");
+    }
     this.#scheme = scheme;
   }
 
@@ -151,7 +153,7 @@ export class Router {
     const { bufname, handler } = this.#findHandler(
       await fn.bufname(denops, buf),
     );
-    const action = (handler.actions || {})[actName];
+    const action = handler.actions ? handler.actions[actName] : undefined;
     if (!action) {
       throw new Error(`There's no valid action ${actName} for ${buf}`);
     }
