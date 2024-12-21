@@ -32,14 +32,20 @@ import type { Handler } from "./types.ts";
 export class Router {
   #handlers: Map<string, Handler>;
   #scheme: string;
-  #defaultHandler?: Handler;
+  #fallbackHandler?: Handler;
 
   constructor(scheme: string) {
     this.#handlers = new Map();
     this.#scheme = scheme;
   }
 
-  #match(bufname: string) {
+  /**
+   * Matches the given buffer name with the registered handlers.
+   * @param bufname The name of the buffer to match.
+   * @returns An object containing the matched handler, path, and parsed buffer name.
+   * @throws Error if no valid handler is found for the buffer name.
+   */
+  #findHandler(bufname: string) {
     const parsed = parseAsBufname(bufname);
     if (parsed.scheme !== this.#scheme) {
       throw new Error(`Invalid operation for ${bufname}`);
@@ -49,11 +55,11 @@ export class Router {
         return { bufname: parsed, path, handler };
       }
     }
-    if (this.#defaultHandler) {
+    if (this.#fallbackHandler) {
       return {
         bufname: parsed,
         path: parsed.expr,
-        handler: this.#defaultHandler,
+        handler: this.#fallbackHandler,
       };
     }
     throw new Error(`There's no valid handler for a buffer ${bufname}`);
@@ -68,9 +74,15 @@ export class Router {
    * @param prefix Prefix for internal denops dispatched command names.
    * @param abuf Buffer number.
    * @param afile File name.
+   * @returns Promise<void>
    */
-  async #load(denops: Denops, prefix: string, abuf: number, afile: string) {
-    const { path, bufname, handler } = this.#match(afile);
+  async #loadBuffer(
+    denops: Denops,
+    prefix: string,
+    abuf: number,
+    afile: string,
+  ) {
+    const { path, bufname, handler } = this.#findHandler(afile);
     await buffer.ensure(denops, abuf, async () => {
       await batch(denops, async (denops) => {
         await handler.load({ bufnr: abuf, bufname });
@@ -97,14 +109,27 @@ export class Router {
    * @param denops Denops instance.
    * @param abuf Buffer number.
    * @param afile File name.
+   * @returns Promise<void>
    */
-  async #save(denops: Denops, abuf: number, afile: string) {
-    const { bufname, handler } = this.#match(afile);
+  async #saveBuffer(denops: Denops, abuf: number, afile: string) {
+    const { bufname, handler } = this.#findHandler(afile);
     if (!handler.save) {
       throw new Error(`There's no valid writable handler for ${afile}`);
     }
     await handler.save({ bufnr: abuf, bufname });
     await option.modified.setLocal(denops, false);
+  }
+
+  /**
+   * @deprecated Use `executeAction` instead.
+   */
+  public action(
+    denops: Denops,
+    buf: number,
+    actName: string,
+    params: Record<string, unknown> = {},
+  ): Promise<void> {
+    return this.executeAction(denops, buf, actName, params);
   }
 
   /**
@@ -115,15 +140,17 @@ export class Router {
    * @param buf Target buffer number.
    * @param actName Name of the action to be called.
    * @param params Parameters for the action. Note that these are not parameters in the buffer name.
-   * @return Promise<void>
+   * @returns Promise<void>
    */
-  public async action(
+  public async executeAction(
     denops: Denops,
     buf: number,
     actName: string,
-    params: Record<string, unknown>,
-  ) {
-    const { bufname, handler } = this.#match(await fn.bufname(denops, buf));
+    params: Record<string, unknown> = {},
+  ): Promise<void> {
+    const { bufname, handler } = this.#findHandler(
+      await fn.bufname(denops, buf),
+    );
     const action = (handler.actions || {})[actName];
     if (!action) {
       throw new Error(`There's no valid action ${actName} for ${buf}`);
@@ -132,19 +159,30 @@ export class Router {
   }
 
   /**
-   * Get a buffer name with the specified path, parameters, and fragment.
-   *
-   * @param path Path to open.
-   * @param params Parameters for the buffer name.
-   * @param fragment Fragment for the buffer name.
-   * @returns string that a buffer name.
+   * @deprecated Use `createBufname` instead.
    */
   public bufname(
     path: string,
     params?: BufnameParams,
     fragment?: string,
   ): string {
-    if (!this.#handlers.has(path) && !this.#defaultHandler) {
+    return this.createBufname(path, params, fragment);
+  }
+
+  /**
+   * Get a buffer name with the specified path, parameters, and fragment.
+   *
+   * @param path Path to open.
+   * @param params Parameters for the buffer name.
+   * @param fragment Fragment for the buffer name.
+   * @returns The formatted buffer name as a string.
+   */
+  public createBufname(
+    path: string,
+    params?: BufnameParams,
+    fragment?: string,
+  ): string {
+    if (!this.#handlers.has(path) && !this.#fallbackHandler) {
       throw new Error(`There's no handler for a path '${path}'`);
     }
     return format({
@@ -174,7 +212,7 @@ export class Router {
     fragment?: string,
     opener?: BufferOpener,
   ): Promise<string> {
-    const bufname = this.bufname(path, params, fragment);
+    const bufname = this.createBufname(path, params, fragment);
     await open(denops, bufname, opener);
     return bufname;
   }
@@ -196,9 +234,16 @@ export class Router {
     params?: BufnameParams,
     fragment?: string,
   ): Promise<string> {
-    const bufname = this.bufname(path, params, fragment);
+    const bufname = this.createBufname(path, params, fragment);
     await preload(denops, bufname);
     return bufname;
+  }
+
+  /**
+   * @deprecated Use `addHandler` instead.
+   */
+  public handle(path: string, handler: Handler) {
+    return this.addHandler(path, handler);
   }
 
   /**
@@ -206,18 +251,27 @@ export class Router {
    *
    * @param path Path which the handler processes.
    * @param handler Handler to handle the buffer.
+   * @returns void
    */
-  public handle(path: string, handler: Handler) {
+  public addHandler(path: string, handler: Handler) {
     this.#handlers.set(path, handler);
+  }
+
+  /**
+   * @deprecated Use `setFallbackHandler` instead.
+   */
+  public handleFallback(handler: Handler) {
+    this.#fallbackHandler = handler;
   }
 
   /**
    * Set a handler to handle the buffer when there's no handler matched for the path.
    *
    * @param handler Handler to handle the buffer.
+   * @returns void
    */
-  public handleFallback(handler: Handler) {
-    this.#defaultHandler = handler;
+  public setFallbackHandler(handler: Handler) {
+    this.#fallbackHandler = handler;
   }
 
   /**
@@ -287,22 +341,22 @@ export class Router {
    * @param prefix Prefix of the dispatcher methods; default: "router".
    * @returns Dispatcher to use.
    */
-  public async dispatch(
+  public async dispatch<T extends Dispatcher, P extends string>(
     denops: Denops,
-    dispatcher: Dispatcher,
-    prefix = "router",
-  ): Promise<Dispatcher> {
+    dispatcher: T,
+    prefix: P = "router" as P,
+  ): Promise<T> {
+    const p = prefix ?? "router" as P;
     await batch(denops, async (denops) => {
       await denops.cmd(`augroup denops-${denops.name}-${this.#scheme}`);
       await denops.cmd(`autocmd! *`);
       await denops.cmd(
-        `autocmd BufReadCmd ${this.#scheme}://* call denops#request('${denops.name}', '${prefix}:internal:load', [bufnr(), bufname()])`,
+        `autocmd BufReadCmd ${this.#scheme}://* call denops#request('${denops.name}', '${p}:internal:load', [bufnr(), bufname()])`,
       );
       await denops.cmd("augroup END");
     });
 
-    const override: Dispatcher = {};
-    override[`${prefix}:open`] = async (
+    const open = async (
       uPath: unknown,
       uParams: unknown,
       uFragment: unknown,
@@ -319,7 +373,8 @@ export class Router {
       const opener = ensure(uOpener, as.Optional(isBufferOpener));
       return await this.open(denops, path, params, fragment, opener);
     };
-    override[`${prefix}:preload`] = async (
+
+    const preload = async (
       uPath: unknown,
       uParams: unknown,
       uFragment: unknown,
@@ -334,23 +389,26 @@ export class Router {
       const fragment = ensure(uFragment, as.Optional(is.String));
       await this.preload(denops, path, params, fragment);
     };
-    override[`${prefix}:internal:load`] = async (
+
+    const internalLoad = async (
       uBuf: unknown,
       uFile: unknown,
     ) => {
       const buf = ensure(uBuf, is.Number);
       const file = ensure(uFile, is.String);
-      await this.#load(denops, prefix, buf, file);
+      await this.#loadBuffer(denops, prefix, buf, file);
     };
-    override[`${prefix}:internal:save`] = async (
+
+    const internalSave = async (
       uBuf: unknown,
       uFile: unknown,
     ) => {
       const buf = ensure(uBuf, is.Number);
       const file = ensure(uFile, is.String);
-      await this.#save(denops, buf, file);
+      await this.#saveBuffer(denops, buf, file);
     };
-    override[`${prefix}:action`] = async (
+
+    const action = async (
       uBuf: unknown,
       uAct: unknown,
       uParams: unknown,
@@ -358,8 +416,16 @@ export class Router {
       const buf = ensure(uBuf, is.Number);
       const act = ensure(uAct, is.String);
       const params = ensure(uParams, is.Record);
-      await this.action(denops, buf, act, params);
+      await this.executeAction(denops, buf, act, params);
     };
-    return { ...dispatcher, ...override };
+
+    return {
+      ...dispatcher,
+      [`${p}:open`]: open,
+      [`${p}:preload`]: preload,
+      [`${p}:internal:load`]: internalLoad,
+      [`${p}:internal:save`]: internalSave,
+      [`${p}:action`]: action,
+    };
   }
 }

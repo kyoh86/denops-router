@@ -9,7 +9,7 @@ test({
   name: "setting handler and dispatching should be successed",
   fn: async (denops) => {
     const r = new Router("testA");
-    r.handle("path/to", {
+    r.addHandler("path/to", {
       load: (_buf) => Promise.resolve(),
     });
     denops.dispatcher = await r.dispatch(denops, {});
@@ -23,7 +23,7 @@ test({
     const r = new Router("testB");
     let loaded: boolean = false;
     let loadedBuffer: Buffer;
-    r.handle("assert-loaded", {
+    r.addHandler("assert-loaded", {
       load: (buf) => {
         loaded = true;
         loadedBuffer = buf;
@@ -66,7 +66,7 @@ test({
   name: "buffers should be opened with fragment and params",
   fn: async (denops) => {
     const r = new Router("testC");
-    r.handle("assert-loaded", {
+    r.addHandler("assert-loaded", {
       load: (_buf) => Promise.resolve(),
     });
     denops.dispatcher = await r.dispatch(denops, {});
@@ -98,7 +98,7 @@ test({
     const r = new Router("testE");
     let loaded: boolean = false;
     let loadedBuffer: Buffer;
-    r.handle("assert-loaded", {
+    r.addHandler("assert-loaded", {
       load: (buf) => {
         loaded = true;
         loadedBuffer = buf;
