@@ -21,7 +21,7 @@ export type Split =
 /**
  * Predicate for unknownutil to ensure {@link Split}.
  * @param x The unknown value to check.
- * @return `true` if the value is {@link Split}.
+ * @returns `true` if the value is {@link Split}.
  * @example
  * ```typescript
  * const x: unknown = "split-top";
@@ -57,7 +57,7 @@ export interface BufferOpener {
 /**
  * Predicate for unknownutil to ensure {@link BufferOpener}.
  * @param x The unknown value to check.
- * @return `true` if the value is {@link BufferOpener}.
+ * @returns `true` if the value is {@link BufferOpener}.
  * @example
  * ```typescript
  * const x: unknown = { reuse: true, split: "split-top" };
@@ -69,7 +69,7 @@ export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
   reuse: as.Optional(is.Boolean),
 });
 
-function openCommand(split?: Split): string[] {
+function getOpenCommand(split?: Split): string[] {
   switch (split) {
     case undefined:
     case "":
@@ -99,7 +99,7 @@ function openCommand(split?: Split): string[] {
 /**
  * Parse Vim's command modifiers (like :aboveleft, :vertical, etc.) to {@link Split}.
  * @param {string|unedefined} mods Vim's command modifiers joined by spaces
- * @return {@link Split}
+ * @returns {@link Split}
  */
 export function parseMods(mods: string | undefined): Split {
   if (typeof mods === "undefined" || mods === "") {
@@ -192,21 +192,18 @@ export function parseMods(mods: string | undefined): Split {
   throw new Error("invalid operation");
 }
 
-function joinCommand(...t: (string | { toString(): string })[]) {
-  return t.join(" ").trim();
-}
-
 /**
  * Open a buffer in a window.
  * @param {Denops} denops Denops instance
  * @param {string} bufname Buffer name to open
  * @param {BufferOpener} opener Options to open the buffer
+ * @returns {Promise<void>}
  */
 export async function open(
   denops: Denops,
   bufname: string,
   opener?: BufferOpener,
-) {
+): Promise<void> {
   opener ??= {};
   const winid = opener.reuse
     ? await fn.bufwinnr(
@@ -215,12 +212,12 @@ export async function open(
     )
     : -1;
   await denops.cmd(
-    (winid < 0)
-      ? joinCommand(
-        ...openCommand(opener.split),
+    (winid < 0
+      ? [
+        ...getOpenCommand(opener.split),
         await fn.fnameescape(denops, bufname),
-      )
-      : joinCommand(winid, "wincmd", "w"),
+      ]
+      : [winid, "wincmd", "w"]).join(" ").trim(),
   );
 }
 
@@ -228,7 +225,7 @@ export async function open(
  * Preload a buffer in a window.
  * @param {Denops} denops Denops instance
  * @param {string} bufname Buffer name to preload
- * @return {Promise<void>}
+ * @returns {Promise<void>}
  */
 export async function preload(denops: Denops, bufname: string): Promise<void> {
   return await fn.bufload(denops, await fn.bufadd(denops, bufname));
