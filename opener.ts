@@ -43,19 +43,20 @@ export const isSplit: Predicate<Split> = is.UnionOf([
   is.LiteralOf("split-tab"),
 ]);
 
-export const validateSplit = v.union([
-  v.literal(""),
-  v.literal("none"),
-  v.literal("split-top"),
-  v.literal("split-above"),
-  v.literal("split-below"),
-  v.literal("split-bottom"),
-  v.literal("split-leftmost"),
-  v.literal("split-left"),
-  v.literal("split-right"),
-  v.literal("split-rightmost"),
-  v.literal("split-tab"),
-]);
+export const validateSplit: v.BaseSchema<unknown, Split, v.BaseIssue<unknown>> =
+  v.union([
+    v.literal(""),
+    v.literal("none"),
+    v.literal("split-top"),
+    v.literal("split-above"),
+    v.literal("split-below"),
+    v.literal("split-bottom"),
+    v.literal("split-leftmost"),
+    v.literal("split-left"),
+    v.literal("split-right"),
+    v.literal("split-rightmost"),
+    v.literal("split-tab"),
+  ]);
 
 /**
  * Options to change a behavior of attaching a buffer to a window.
@@ -87,7 +88,11 @@ export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
 /**
  * Validator for {@link BufferOpener}.
  */
-export const validateBufferOpener = v.object({
+export const validateBufferOpener: v.BaseSchema<
+  unknown,
+  BufferOpener,
+  v.BaseIssue<unknown>
+> = v.object({
   split: v.optional(validateSplit),
   reuse: v.optional(v.boolean()),
 });

@@ -1,5 +1,4 @@
 import type { Denops, Dispatcher } from "@denops/core";
-import { as, ensure, is } from "@core/unknownutil";
 import { batch } from "@denops/std/batch";
 import * as buffer from "@denops/std/buffer";
 import * as fn from "@denops/std/function";
@@ -15,14 +14,11 @@ import {
 
 import {
   type BufferOpener as BufferOpener,
-  isBufferOpener,
   open,
   preload,
   validateBufferOpener,
 } from "./opener.ts";
 import type { Handler } from "./types.ts";
-import { error } from "console";
-import { pathToFileURL } from "url";
 
 /**
  * `Router` class defines how a Denops plugin handles each buffer that is named
