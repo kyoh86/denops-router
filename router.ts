@@ -99,7 +99,7 @@ export class Router {
         await denops.cmd(`
           syntax clear
           syntax match Error /\\v.+/
-             highlight link Error ErrorMsg
+          highlight link Error ErrorMsg
         `);
       });
     }
@@ -401,28 +401,32 @@ export class Router {
       uFragment: unknown,
       uOpener: unknown,
     ) => {
-      const path = v.parse(v.string(), uPath, {
-        message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
-      });
-      const params = v.parse(
-        v.optional(
-          v.record(
-            v.string(),
-            v.optional(v.union([v.string(), v.array(v.string())])),
+      try {
+        const path = v.parse(v.string(), uPath, {
+          message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
+        });
+        const params = v.parse(
+          v.optional(
+            v.record(
+              v.string(),
+              v.optional(v.union([v.string(), v.array(v.string())])),
+            ),
           ),
-        ),
-        uParams,
-        {
-          message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
-        },
-      );
-      const fragment = v.parse(v.optional(v.string()), uFragment, {
-        message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
-      });
-      const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
-        message: (issue) => `Invalid 'opener' at 4th arg: ${issue.message}`,
-      });
-      return await this.open(denops, path, params, fragment, opener);
+          uParams,
+          {
+            message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
+          },
+        );
+        const fragment = v.parse(v.optional(v.string()), uFragment, {
+          message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
+        });
+        const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
+          message: (issue) => `Invalid 'opener' at 4th arg: ${issue.message}`,
+        });
+        return await this.open(denops, path, params, fragment, opener);
+      } catch (e) {
+        await denops.cmd(`echoerr "Error: ${e}"`);
+      }
     };
 
     const preload = async (
@@ -430,51 +434,63 @@ export class Router {
       uParams: unknown,
       uFragment: unknown,
     ) => {
-      const path = v.parse(v.string(), uPath, {
-        message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
-      });
-      const params = v.parse(
-        v.optional(
-          v.record(
-            v.string(),
-            v.optional(v.union([v.string(), v.array(v.string())])),
+      try {
+        const path = v.parse(v.string(), uPath, {
+          message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
+        });
+        const params = v.parse(
+          v.optional(
+            v.record(
+              v.string(),
+              v.optional(v.union([v.string(), v.array(v.string())])),
+            ),
           ),
-        ),
-        uParams,
-        {
-          message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
-        },
-      );
-      const fragment = v.parse(v.optional(v.string()), uFragment, {
-        message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
-      });
-      await this.preload(denops, path, params, fragment);
+          uParams,
+          {
+            message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
+          },
+        );
+        const fragment = v.parse(v.optional(v.string()), uFragment, {
+          message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
+        });
+        await this.preload(denops, path, params, fragment);
+      } catch (e) {
+        await denops.cmd(`echoerr "Error: ${e}"`);
+      }
     };
 
     const internalLoad = async (
       uBuf: unknown,
       uFile: unknown,
     ) => {
-      const buf = v.parse(v.number(), uBuf, {
-        message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
-      });
-      const file = v.parse(v.string(), uFile, {
-        message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
-      });
-      await this.#loadBuffer(denops, prefix, buf, file);
+      try {
+        const buf = v.parse(v.number(), uBuf, {
+          message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+        });
+        const file = v.parse(v.string(), uFile, {
+          message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
+        });
+        await this.#loadBuffer(denops, prefix, buf, file);
+      } catch (e) {
+        await denops.cmd(`echoerr "Error: ${e}"`);
+      }
     };
 
     const internalSave = async (
       uBuf: unknown,
       uFile: unknown,
     ) => {
-      const buf = v.parse(v.number(), uBuf, {
-        message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
-      });
-      const file = v.parse(v.string(), uFile, {
-        message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
-      });
-      await this.#saveBuffer(denops, buf, file);
+      try {
+        const buf = v.parse(v.number(), uBuf, {
+          message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+        });
+        const file = v.parse(v.string(), uFile, {
+          message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
+        });
+        await this.#saveBuffer(denops, buf, file);
+      } catch (e) {
+        await denops.cmd(`echoerr "Error: ${e}"`);
+      }
     };
 
     const action = async (
@@ -482,23 +498,27 @@ export class Router {
       uAct: unknown,
       uParams: unknown,
     ) => {
-      const buf = v.parse(v.number(), uBuf, {
-        message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
-      });
-      const act = v.parse(v.string(), uAct, {
-        message: (issue) => `Invalid 'act' at 2nd arg: ${issue.message}`,
-      });
-      const params = v.parse(
-        v.record(
-          v.string(),
-          v.unknown(),
-        ),
-        uParams,
-        {
-          message: (issue) => `Invalid 'params' at 3rd arg: ${issue.message}`,
-        },
-      );
-      await this.executeAction(denops, buf, act, params);
+      try {
+        const buf = v.parse(v.number(), uBuf, {
+          message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+        });
+        const act = v.parse(v.string(), uAct, {
+          message: (issue) => `Invalid 'act' at 2nd arg: ${issue.message}`,
+        });
+        const params = v.parse(
+          v.record(
+            v.string(),
+            v.unknown(),
+          ),
+          uParams,
+          {
+            message: (issue) => `Invalid 'params' at 3rd arg: ${issue.message}`,
+          },
+        );
+        await this.executeAction(denops, buf, act, params);
+      } catch (e) {
+        await denops.cmd(`echoerr "Error: ${e}"`);
+      }
     };
 
     return {
