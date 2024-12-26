@@ -425,7 +425,7 @@ export class Router {
         });
         return await this.open(denops, path, params, fragment, opener);
       } catch (e) {
-        await denops.cmd(`echoerr "Error: ${e}"`);
+        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
       }
     };
 
@@ -455,7 +455,7 @@ export class Router {
         });
         await this.preload(denops, path, params, fragment);
       } catch (e) {
-        await denops.cmd(`echoerr "Error: ${e}"`);
+        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
       }
     };
 
@@ -472,7 +472,7 @@ export class Router {
         });
         await this.#loadBuffer(denops, prefix, buf, file);
       } catch (e) {
-        await denops.cmd(`echoerr "Error: ${e}"`);
+        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
       }
     };
 
@@ -489,7 +489,7 @@ export class Router {
         });
         await this.#saveBuffer(denops, buf, file);
       } catch (e) {
-        await denops.cmd(`echoerr "Error: ${e}"`);
+        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
       }
     };
 
@@ -517,7 +517,7 @@ export class Router {
         );
         await this.executeAction(denops, buf, act, params);
       } catch (e) {
-        await denops.cmd(`echoerr "Error: ${e}"`);
+        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
       }
     };
 
