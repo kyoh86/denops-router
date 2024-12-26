@@ -423,8 +423,10 @@ export class Router {
           message: (issue) => `Invalid 3rd arg: ${issue.message}`,
         });
         const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
-          message: (issue) =>
-            `Invalid 4th arg: ${issue.message} in ${issue.path}`,
+          message: (issue) => {
+            console.log(issue);
+            return `Invalid 4th arg: ${issue.message} in ${issue.path}`;
+          },
         });
         return await this.open(denops, path, params, fragment, opener);
       } catch (e) {
