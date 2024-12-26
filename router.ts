@@ -404,7 +404,7 @@ export class Router {
     ) => {
       try {
         const path = v.parse(v.string(), uPath, {
-          message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
+          message: (issue) => `Invalid 1st arg: ${issue.message}`,
         });
         const params = v.parse(
           v.optional(
@@ -415,14 +415,15 @@ export class Router {
           ),
           uParams,
           {
-            message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
+            message: (issue) =>
+              `Invalid 2nd arg: ${issue.message} in ${issue.path}`,
           },
         );
         const fragment = v.parse(v.optional(v.string()), uFragment, {
-          message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
+          message: (issue) => `Invalid 3rd arg: ${issue.message}`,
         });
         const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
-          message: (issue) => `Invalid 'opener' at 4th arg: ${issue.message}`,
+          message: (issue) => `Invalid 4th arg: ${issue.message}`,
         });
         return await this.open(denops, path, params, fragment, opener);
       } catch (e) {
@@ -444,7 +445,7 @@ export class Router {
     ) => {
       try {
         const path = v.parse(v.string(), uPath, {
-          message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
+          message: (issue) => `Invalid 1st arg: ${issue.message}`,
         });
         const params = v.parse(
           v.optional(
@@ -455,11 +456,12 @@ export class Router {
           ),
           uParams,
           {
-            message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
+            message: (issue) =>
+              `Invalid 2nd arg: ${issue.message} in ${issue.path}`,
           },
         );
         const fragment = v.parse(v.optional(v.string()), uFragment, {
-          message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
+          message: (issue) => `Invalid 3rd arg: ${issue.message}`,
         });
         await this.preload(denops, path, params, fragment);
       } catch (e) {
@@ -480,10 +482,10 @@ export class Router {
     ) => {
       try {
         const buf = v.parse(v.number(), uBuf, {
-          message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+          message: (issue) => `Invalid 1st arg: ${issue.message}`,
         });
         const file = v.parse(v.string(), uFile, {
-          message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
+          message: (issue) => `Invalid 2nd arg: ${issue.message}`,
         });
         await this.#loadBuffer(denops, prefix, buf, file);
       } catch (e) {
@@ -504,10 +506,10 @@ export class Router {
     ) => {
       try {
         const buf = v.parse(v.number(), uBuf, {
-          message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+          message: (issue) => `Invalid 1st arg: ${issue.message}`,
         });
         const file = v.parse(v.string(), uFile, {
-          message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
+          message: (issue) => `Invalid 2nd arg: ${issue.message}`,
         });
         await this.#saveBuffer(denops, buf, file);
       } catch (e) {
@@ -529,19 +531,17 @@ export class Router {
     ) => {
       try {
         const buf = v.parse(v.number(), uBuf, {
-          message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+          message: (issue) => `Invalid 1st arg: ${issue.message}`,
         });
         const act = v.parse(v.string(), uAct, {
-          message: (issue) => `Invalid 'act' at 2nd arg: ${issue.message}`,
+          message: (issue) => `Invalid 2nd arg: ${issue.message}`,
         });
         const params = v.parse(
-          v.record(
-            v.string(),
-            v.unknown(),
-          ),
+          v.record(v.string(), v.unknown()),
           uParams,
           {
-            message: (issue) => `Invalid 'params' at 3rd arg: ${issue.message}`,
+            message: (issue) =>
+              `Invalid 3rd arg: ${issue.message} in ${issue.path}`,
           },
         );
         await this.executeAction(denops, buf, act, params);
