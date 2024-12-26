@@ -1,5 +1,6 @@
 import type { Denops } from "@denops/std";
 import * as fn from "@denops/std/function";
+import * as v from "@valibot/valibot";
 import { as, is, type Predicate } from "@core/unknownutil";
 
 /**
@@ -42,6 +43,20 @@ export const isSplit: Predicate<Split> = is.UnionOf([
   is.LiteralOf("split-tab"),
 ]);
 
+export const validateSplit = v.union([
+  v.literal(""),
+  v.literal("none"),
+  v.literal("split-top"),
+  v.literal("split-above"),
+  v.literal("split-below"),
+  v.literal("split-bottom"),
+  v.literal("split-leftmost"),
+  v.literal("split-left"),
+  v.literal("split-right"),
+  v.literal("split-rightmost"),
+  v.literal("split-tab"),
+]);
+
 /**
  * Options to change a behavior of attaching a buffer to a window.
  * The buffer is attached to the window by `:edit` command.
@@ -67,6 +82,14 @@ export interface BufferOpener {
 export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
   split: as.Optional(isSplit),
   reuse: as.Optional(is.Boolean),
+});
+
+/**
+ * Validator for {@link BufferOpener}.
+ */
+export const validateBufferOpener = v.object({
+  split: v.optional(validateSplit),
+  reuse: v.optional(v.boolean()),
 });
 
 function getOpenCommand(split?: Split): string[] {

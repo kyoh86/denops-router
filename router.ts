@@ -5,6 +5,8 @@ import * as buffer from "@denops/std/buffer";
 import * as fn from "@denops/std/function";
 import * as vars from "@denops/std/variable";
 import * as option from "@denops/std/option";
+import * as v from "@valibot/valibot";
+
 import {
   type BufnameParams,
   format,
@@ -16,8 +18,11 @@ import {
   isBufferOpener,
   open,
   preload,
+  validateBufferOpener,
 } from "./opener.ts";
 import type { Handler } from "./types.ts";
+import { error } from "console";
+import { pathToFileURL } from "url";
 
 /**
  * `Router` class defines how a Denops plugin handles each buffer that is named
@@ -400,15 +405,27 @@ export class Router {
       uFragment: unknown,
       uOpener: unknown,
     ) => {
-      const path = ensure(uPath, is.String);
-      const params = ensure(
+      const path = v.parse(v.string(), uPath, {
+        message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
+      });
+      const params = v.parse(
+        v.optional(
+          v.record(
+            v.string(),
+            v.optional(v.union([v.string(), v.array(v.string())])),
+          ),
+        ),
         uParams,
-        as.Optional(is.RecordOf(
-          as.Optional(is.UnionOf([is.String, is.ArrayOf(is.String)])),
-        )),
+        {
+          message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
+        },
       );
-      const fragment = ensure(uFragment, as.Optional(is.String));
-      const opener = ensure(uOpener, as.Optional(isBufferOpener));
+      const fragment = v.parse(v.optional(v.string()), uFragment, {
+        message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
+      });
+      const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
+        message: (issue) => `Invalid 'opener' at 4th arg: ${issue.message}`,
+      });
       return await this.open(denops, path, params, fragment, opener);
     };
 
@@ -417,14 +434,24 @@ export class Router {
       uParams: unknown,
       uFragment: unknown,
     ) => {
-      const path = ensure(uPath, is.String);
-      const params = ensure(
+      const path = v.parse(v.string(), uPath, {
+        message: (issue) => `Invalid 'path' at 1st arg: ${issue.message}`,
+      });
+      const params = v.parse(
+        v.optional(
+          v.record(
+            v.string(),
+            v.optional(v.union([v.string(), v.array(v.string())])),
+          ),
+        ),
         uParams,
-        as.Optional(is.RecordOf(
-          as.Optional(is.UnionOf([is.String, is.ArrayOf(is.String)])),
-        )),
+        {
+          message: (issue) => `Invalid 'params' at 2nd arg: ${issue.message}`,
+        },
       );
-      const fragment = ensure(uFragment, as.Optional(is.String));
+      const fragment = v.parse(v.optional(v.string()), uFragment, {
+        message: (issue) => `Invalid 'fragment' at 3rd arg: ${issue.message}`,
+      });
       await this.preload(denops, path, params, fragment);
     };
 
@@ -432,8 +459,12 @@ export class Router {
       uBuf: unknown,
       uFile: unknown,
     ) => {
-      const buf = ensure(uBuf, is.Number);
-      const file = ensure(uFile, is.String);
+      const buf = v.parse(v.number(), uBuf, {
+        message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+      });
+      const file = v.parse(v.string(), uFile, {
+        message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
+      });
       await this.#loadBuffer(denops, prefix, buf, file);
     };
 
@@ -441,8 +472,12 @@ export class Router {
       uBuf: unknown,
       uFile: unknown,
     ) => {
-      const buf = ensure(uBuf, is.Number);
-      const file = ensure(uFile, is.String);
+      const buf = v.parse(v.number(), uBuf, {
+        message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+      });
+      const file = v.parse(v.string(), uFile, {
+        message: (issue) => `Invalid 'file' at 2nd arg: ${issue.message}`,
+      });
       await this.#saveBuffer(denops, buf, file);
     };
 
@@ -451,9 +486,22 @@ export class Router {
       uAct: unknown,
       uParams: unknown,
     ) => {
-      const buf = ensure(uBuf, is.Number);
-      const act = ensure(uAct, is.String);
-      const params = ensure(uParams, is.Record);
+      const buf = v.parse(v.number(), uBuf, {
+        message: (issue) => `Invalid 'buf' at 1st arg: ${issue.message}`,
+      });
+      const act = v.parse(v.string(), uAct, {
+        message: (issue) => `Invalid 'act' at 2nd arg: ${issue.message}`,
+      });
+      const params = v.parse(
+        v.record(
+          v.string(),
+          v.unknown(),
+        ),
+        uParams,
+        {
+          message: (issue) => `Invalid 'params' at 3rd arg: ${issue.message}`,
+        },
+      );
       await this.executeAction(denops, buf, act, params);
     };
 
