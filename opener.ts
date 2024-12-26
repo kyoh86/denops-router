@@ -43,20 +43,34 @@ export const isSplit: Predicate<Split> = is.UnionOf([
   is.LiteralOf("split-tab"),
 ]);
 
-export const validateSplit: v.BaseSchema<unknown, Split, v.BaseIssue<unknown>> =
-  v.union([
-    v.literal(""),
-    v.literal("none"),
-    v.literal("split-top"),
-    v.literal("split-above"),
-    v.literal("split-below"),
-    v.literal("split-bottom"),
-    v.literal("split-leftmost"),
-    v.literal("split-left"),
-    v.literal("split-right"),
-    v.literal("split-rightmost"),
-    v.literal("split-tab"),
-  ]);
+export const validateSplit: v.BaseSchema<
+  | ""
+  | "top"
+  | "above"
+  | "below"
+  | "bottom"
+  | "leftmost"
+  | "left"
+  | "right"
+  | "rightmost"
+  | "tab",
+  Split,
+  v.BaseIssue<unknown>
+> = v.pipe(
+  v.enum({
+    "": "",
+    top: "top",
+    above: "above",
+    below: "below",
+    bottom: "bottom",
+    leftmost: "leftmost",
+    left: "left",
+    right: "right",
+    rightmost: "rightmost",
+    tab: "tab",
+  }),
+  v.transform((x) => x === "" ? "" : `split-${x}` as const),
+);
 
 /**
  * Options to change a behavior of attaching a buffer to a window.
