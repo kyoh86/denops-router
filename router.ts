@@ -414,10 +414,7 @@ export class Router {
             ),
           ),
           uParams,
-          {
-            message: (issue) =>
-              `Invalid 2nd arg: ${issue.message} in ${issue.path}`,
-          },
+          { message: (issue) => `Invalid 2nd arg: ${issue.message}` },
         );
         const fragment = v.parse(v.optional(v.string()), uFragment, {
           message: (issue) => `Invalid 3rd arg: ${issue.message}`,
@@ -425,7 +422,7 @@ export class Router {
         const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
           message: (issue) => {
             console.log(issue);
-            return `Invalid 4th arg: ${issue.message} in ${issue.path}`;
+            return `Invalid 4th arg: ${issue.message}`;
           },
         });
         return await this.open(denops, path, params, fragment, opener);
@@ -458,10 +455,7 @@ export class Router {
             ),
           ),
           uParams,
-          {
-            message: (issue) =>
-              `Invalid 2nd arg: ${issue.message} in ${issue.path}`,
-          },
+          { message: (issue) => `Invalid 2nd arg: ${issue.message}` },
         );
         const fragment = v.parse(v.optional(v.string()), uFragment, {
           message: (issue) => `Invalid 3rd arg: ${issue.message}`,
@@ -542,10 +536,7 @@ export class Router {
         const params = v.parse(
           v.record(v.string(), v.unknown()),
           uParams,
-          {
-            message: (issue) =>
-              `Invalid 3rd arg: ${issue.message} in ${issue.path}`,
-          },
+          { message: (issue) => `Invalid 3rd arg: ${issue.message}` },
         );
         await this.executeAction(denops, buf, act, params);
       } catch (e) {
