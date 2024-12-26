@@ -428,7 +428,9 @@ export class Router {
       } catch (e) {
         const err = maybe(e, is.ObjectOf({ message: is.String }));
         if (err) {
-          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+          await denops.cmd("echohl ErrorMsg | echomsg l:msg | echohl None", {
+            msg: `Error: ${err.message}`,
+          });
         } else {
           throw e;
         }
@@ -463,7 +465,9 @@ export class Router {
       } catch (e) {
         const err = maybe(e, is.ObjectOf({ message: is.String }));
         if (err) {
-          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+          await denops.cmd("echohl ErrorMsg | echomsg l:msg | echohl None", {
+            msg: `Error: ${err.message}`,
+          });
         } else {
           throw e;
         }
@@ -485,7 +489,9 @@ export class Router {
       } catch (e) {
         const err = maybe(e, is.ObjectOf({ message: is.String }));
         if (err) {
-          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+          await denops.cmd("echohl ErrorMsg | echomsg l:msg | echohl None", {
+            msg: `Error: ${err.message}`,
+          });
         } else {
           throw e;
         }
@@ -507,7 +513,9 @@ export class Router {
       } catch (e) {
         const err = maybe(e, is.ObjectOf({ message: is.String }));
         if (err) {
-          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+          await denops.cmd("echohl ErrorMsg | echomsg l:msg | echohl None", {
+            msg: `Error: ${err.message}`,
+          });
         } else {
           throw e;
         }
@@ -540,7 +548,9 @@ export class Router {
       } catch (e) {
         const err = maybe(e, is.ObjectOf({ message: is.String }));
         if (err) {
-          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+          await denops.cmd("echohl ErrorMsg | echomsg l:msg | echohl None", {
+            msg: `Error: ${err.message}`,
+          });
         } else {
           throw e;
         }
