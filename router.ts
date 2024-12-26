@@ -19,6 +19,7 @@ import {
   validateBufferOpener,
 } from "./opener.ts";
 import type { Handler } from "./types.ts";
+import { is, maybe } from "@core/unknownutil";
 
 /**
  * `Router` class defines how a Denops plugin handles each buffer that is named
@@ -425,7 +426,12 @@ export class Router {
         });
         return await this.open(denops, path, params, fragment, opener);
       } catch (e) {
-        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
+        const err = maybe(e, is.ObjectOf({ message: is.String }));
+        if (err) {
+          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+        } else {
+          throw e;
+        }
       }
     };
 
@@ -455,7 +461,12 @@ export class Router {
         });
         await this.preload(denops, path, params, fragment);
       } catch (e) {
-        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
+        const err = maybe(e, is.ObjectOf({ message: is.String }));
+        if (err) {
+          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+        } else {
+          throw e;
+        }
       }
     };
 
@@ -472,7 +483,12 @@ export class Router {
         });
         await this.#loadBuffer(denops, prefix, buf, file);
       } catch (e) {
-        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
+        const err = maybe(e, is.ObjectOf({ message: is.String }));
+        if (err) {
+          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+        } else {
+          throw e;
+        }
       }
     };
 
@@ -489,7 +505,12 @@ export class Router {
         });
         await this.#saveBuffer(denops, buf, file);
       } catch (e) {
-        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
+        const err = maybe(e, is.ObjectOf({ message: is.String }));
+        if (err) {
+          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+        } else {
+          throw e;
+        }
       }
     };
 
@@ -517,7 +538,12 @@ export class Router {
         );
         await this.executeAction(denops, buf, act, params);
       } catch (e) {
-        await denops.cmd("echoerr l:msg", { msg: `Error: ${e}` });
+        const err = maybe(e, is.ObjectOf({ message: is.String }));
+        if (err) {
+          await denops.cmd("echoerr l:msg", { msg: `Error: ${err.message}` });
+        } else {
+          throw e;
+        }
       }
     };
 
