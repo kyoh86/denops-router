@@ -45,6 +45,7 @@ export const isSplit: Predicate<Split> = is.UnionOf([
 
 export const validateSplit: v.BaseSchema<
   | ""
+  | "none"
   | "top"
   | "above"
   | "below"
@@ -59,6 +60,7 @@ export const validateSplit: v.BaseSchema<
 > = v.pipe(
   v.enum({
     "": "",
+    none: "none",
     top: "top",
     above: "above",
     below: "below",
@@ -69,7 +71,9 @@ export const validateSplit: v.BaseSchema<
     rightmost: "rightmost",
     tab: "tab",
   }),
-  v.transform((x) => x === "" ? "" : `split-${x}` as const),
+  v.transform((x) =>
+    x === "" ? "" : x === "none" ? "none" : `split-${x}` as const
+  ),
 );
 
 /**
