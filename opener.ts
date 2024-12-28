@@ -43,7 +43,7 @@ export const isSplit: Predicate<Split> = is.UnionOf([
   is.LiteralOf("split-tab"),
 ]);
 
-export const validateSplit: v.BaseSchema<
+export const splitSchema: v.BaseSchema<
   | ""
   | "none"
   | "top"
@@ -77,6 +77,11 @@ export const validateSplit: v.BaseSchema<
 );
 
 /**
+ * @deprecated Use {@link splitSchema} instead.
+ */
+export const validateSplit = splitSchema;
+
+/**
  * Options to change a behavior of attaching a buffer to a window.
  * The buffer is attached to the window by `:edit` command.
  * @property {boolean} reuse If the buffer is already atached in any window, focus it.
@@ -106,14 +111,19 @@ export const isBufferOpener: Predicate<BufferOpener> = is.ObjectOf({
 /**
  * Validator for {@link BufferOpener}.
  */
-export const validateBufferOpener: v.BaseSchema<
+export const bufferOpenerSchema: v.BaseSchema<
   unknown,
   BufferOpener,
   v.BaseIssue<unknown>
 > = v.object({
-  split: v.optional(validateSplit),
+  split: v.optional(splitSchema),
   reuse: v.optional(v.boolean()),
 });
+
+/**
+ * @deprecated Use {@link bufferOpenerSchema} instead.
+ */
+export const validateBufferOpener = bufferOpenerSchema;
 
 function getOpenCommand(split?: Split): string[] {
   switch (split) {

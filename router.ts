@@ -14,9 +14,9 @@ import {
 
 import {
   type BufferOpener as BufferOpener,
+  bufferOpenerSchema,
   open,
   preload,
-  validateBufferOpener,
 } from "./opener.ts";
 import type { Handler } from "./types.ts";
 import { is, maybe } from "@core/unknownutil";
@@ -419,7 +419,7 @@ export class Router {
         const fragment = v.parse(v.optional(v.string()), uFragment, {
           message: (issue) => `Invalid 3rd arg: ${issue.message}`,
         });
-        const opener = v.parse(v.optional(validateBufferOpener), uOpener, {
+        const opener = v.parse(v.optional(bufferOpenerSchema), uOpener, {
           message: (issue) => {
             console.log(issue);
             return `Invalid 4th arg: ${issue.message}`;
