@@ -125,19 +125,35 @@ export class Router {
   ): Promise<void> {
     const { path, bufname, handler } = this.#findHandler(afile);
     await buffer.ensure(denops, abuf, async () => {
+      const marker = await vars.buffers.get(
+        denops,
+        "denops_router_handler",
+      );
+      const firstTime = !marker;
       await batch(denops, async (denops) => {
-        await handler.load({ bufnr: abuf, bufname });
-        await vars.b.set(denops, "denops_router_handler_path", path); // A marker for the handler kind: now it's used just for the test
-        await option.swapfile.setLocal(denops, false);
-        await option.modified.setLocal(denops, false);
+        await handler.load({ firstTime }, { bufnr: abuf, bufname });
+        if (!firstTime) {
+          // If the buffer is already loaded, we don't need to set the buffer options.
+          return;
+        }
+        // A marker to check if the buffer is already loaded
+        await vars.buffers.set(
+          denops,
+          "denops_router_handler",
+          `${this.#scheme}://${path}`,
+        );
+        await option.swapfile.setBuffer(denops, abuf, false);
+        await option.modified.setBuffer(denops, abuf, false);
         if (handler.save) {
-          await denops.cmd(
-            `autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])`,
-          );
-          await option.buftype.setLocal(denops, "acwrite");
+          await denops.cmd(`
+            augroup denops-${denops.name}-${this.#scheme}-saver
+            autocmd! <buffer>
+            autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])
+          `);
+          await option.buftype.setBuffer(denops, abuf, "acwrite");
         } else {
-          await option.modifiable.setLocal(denops, false);
-          await option.readonly.setLocal(denops, true);
+          await option.modifiable.setBuffer(denops, abuf, false);
+          await option.readonly.setBuffer(denops, abuf, true);
         }
       });
     });
@@ -156,7 +172,7 @@ export class Router {
     if (!handler.save) {
       throw new Error(`There's no valid writable handler for ${afile}`);
     }
-    await handler.save({ bufnr: abuf, bufname });
+    await handler.save({}, { bufnr: abuf, bufname });
     await option.modified.setLocal(denops, false);
   }
 

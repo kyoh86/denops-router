@@ -1,6 +1,21 @@
 import type { Bufname } from "@denops/std/bufname";
 
 /**
+ * LoadContext represents a context when the buffer is loaded.
+ * @property firstTime True if the buffer is loaded for the first time.
+ *                    False if the buffer is reloaded.
+ */
+export type LoadContext = {
+  firstTime: boolean;
+};
+
+/**
+ * SaveContext represents a context when the buffer is saved.
+ * (Reserved for future use)
+ */
+export type SaveContext = Record<PropertyKey, never>;
+
+/**
  * Buffer represents a buffer.
  * @property bufnr Buffer number.
  * @property bufname Parsed buffer name.
@@ -35,12 +50,12 @@ export interface Handler {
    * Read the buffer content and set it into the buffer.
    * @param buf Buffer to load.
    */
-  load(buf: Buffer): Promise<void>;
+  load(ctx: LoadContext, buf: Buffer): Promise<void>;
   /**
    * Write the buffer content to.
    * @param buf Buffer to save.
    */
-  save?(buf: Buffer): Promise<void>;
+  save?(ctx: SaveContext, buf: Buffer): Promise<void>;
   /**
    * Actions to be performed on the buffer.
    */

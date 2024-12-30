@@ -10,7 +10,7 @@ test({
   fn: async (denops) => {
     const r = new Router("testA");
     r.addHandler("path/to", {
-      load: (_buf) => Promise.resolve(),
+      load: (_ctx, _buf) => Promise.resolve(),
     });
     denops.dispatcher = await r.dispatch(denops, {});
   },
@@ -21,12 +21,14 @@ test({
   name: "handler should be loaded when it opens buffer",
   fn: async (denops) => {
     const r = new Router("testB");
+    let first: boolean | undefined;
     let loaded: boolean = false;
     let loadedBuffer: Buffer;
     r.addHandler("assert-loaded", {
-      load: (buf) => {
+      load: ({ firstTime }, buf) => {
         loaded = true;
         loadedBuffer = buf;
+        first = firstTime;
         return Promise.resolve();
       },
     });
@@ -48,16 +50,21 @@ test({
       "buffer should be assigned to any window",
     );
     assert(loaded, "handler should be loaded");
+    assert(first, "handler should be loaded as first time");
     assert(
       // @ts-ignore This is assigned by closure
       loadedBuffer?.bufname.scheme === "testB",
       "handler should be loaded",
     );
-    const marker = buffers[0].variables.denops_router_handler_path;
+    const marker = buffers[0].variables.denops_router_handler;
+    const expected = "testB://assert-loaded";
     assert(
-      marker === "assert-loaded",
-      "handler marker should be set as loaded",
+      marker === expected,
+      `expect the handler marker should be set as ${expected}, but got ${marker}`,
     );
+
+    await denops.cmd(`${loadedBuffer.bufnr}bufdo e!`);
+    assert(!first, "handler should not be loaded as first time");
   },
 });
 
@@ -67,7 +74,7 @@ test({
   fn: async (denops) => {
     const r = new Router("testC");
     r.addHandler("assert-loaded", {
-      load: (_buf) => Promise.resolve(),
+      load: (_ctx, _buf) => Promise.resolve(),
     });
     denops.dispatcher = await r.dispatch(denops, {});
     await denops.call("denops#request", denops.name, "router:open", [
@@ -96,10 +103,12 @@ test({
   name: "handler should be loaded when it preloads buffer",
   fn: async (denops) => {
     const r = new Router("testE");
+    let first: boolean | undefined;
     let loaded: boolean = false;
     let loadedBuffer: Buffer;
     r.addHandler("assert-loaded", {
-      load: (buf) => {
+      load: ({ firstTime }, buf) => {
+        first = firstTime;
         loaded = true;
         loadedBuffer = buf;
         return Promise.resolve();
@@ -117,14 +126,15 @@ test({
     );
     assert(buffers.length === 1, "buffer should be preloaded");
     assert(loaded, "handler should be loaded");
+    assert(first, "handler should be loaded as first time");
     assert(
       // @ts-ignore This is assigned by closure
       loadedBuffer?.bufname.scheme === "testE",
       "handler should be loaded",
     );
-    const marker = buffers[0].variables.denops_router_handler_path;
+    const marker = buffers[0].variables.denops_router_handler;
     assert(
-      marker === "assert-loaded",
+      marker === "testE://assert-loaded",
       "handler marker should be set as loaded",
     );
   },
