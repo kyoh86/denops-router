@@ -1,6 +1,7 @@
 import type { Denops, Dispatcher } from "@denops/core";
 import { batch } from "@denops/std/batch";
 import * as buffer from "@denops/std/buffer";
+import * as autocmd from "@denops/std/autocmd";
 import * as fn from "@denops/std/function";
 import * as vars from "@denops/std/variable";
 import * as option from "@denops/std/option";
@@ -145,17 +146,19 @@ export class Router {
         await option.swapfile.setBuffer(denops, abuf, false);
         await option.modified.setBuffer(denops, abuf, false);
         if (handler.save) {
-          await batch(denops, async (denops) => {
-            await denops.cmd(
-              `augroup denops-${denops.name}-${this.#scheme}-saver-${abuf}`,
-            );
-            await denops.cmd(`autocmd! *`);
-            await denops.cmd(
-              `autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])`,
-            );
-            await denops.cmd(`augroup END`);
-            await option.buftype.setBuffer(denops, abuf, "acwrite");
-          });
+          await autocmd.group(
+            denops,
+            `denops-${denops.name}-${this.#scheme}-saver-${abuf}`,
+            (helper) => {
+              helper.remove("*");
+              helper.define(
+                "BufWriteCmd",
+                "<buffer>",
+                `call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])`,
+              );
+            },
+          );
+          await option.buftype.setBuffer(denops, abuf, "acwrite");
         } else {
           await option.modifiable.setBuffer(denops, abuf, false);
           await option.readonly.setBuffer(denops, abuf, true);
