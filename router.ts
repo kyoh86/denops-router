@@ -146,8 +146,8 @@ export class Router {
         await option.modified.setBuffer(denops, abuf, false);
         if (handler.save) {
           await denops.cmd(`
-            augroup denops-${denops.name}-${this.#scheme}-saver
-            autocmd! <buffer>
+            augroup denops-${denops.name}-${this.#scheme}-saver-${abuf}
+            autocmd! *
             autocmd BufWriteCmd <buffer> call denops#request('${denops.name}', '${prefix}:internal:save', [${abuf}, '${afile}'])
           `);
           await option.buftype.setBuffer(denops, abuf, "acwrite");
