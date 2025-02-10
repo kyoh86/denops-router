@@ -5,9 +5,6 @@
     ".": "./mod.ts"
   },
   "description": "This is a Deno library for denops.vim, serving as a router and dispatcher for acwrite buffers",
-  "fmt": { "include": ["*"] },
-  "lint": { "include": ["*"] },
-  "test": { "include": ["*"] },
   "tasks": {
     "update": "deno run --allow-env --allow-read --allow-write --allow-net --allow-run=git,deno jsr:@molt/cli --write ./**/*.ts",
     "fmt": "deno fmt",
