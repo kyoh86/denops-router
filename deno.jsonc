@@ -5,10 +5,15 @@
     ".": "./mod.ts"
   },
   "description": "This is a Deno library for denops.vim, serving as a router and dispatcher for acwrite buffers",
+  "fmt": { "include": ["*"] },
+  "lint": { "include": ["*"] },
+  "test": { "include": ["*"] },
   "tasks": {
-    "test": "deno test --allow-env=DENOPS_TEST_CONNECT_TIMEOUT,DENOPS_TEST_DENOPS_PATH,DENOPS_TEST_VERBOSE,DENOPS_TEST_VIM_EXECUTABLE,DENOPS_TEST_NVIM_EXECUTABLE --allow-run=vim,nvim --allow-net=127.0.0.1:0 --allow-read",
+    "update": "deno run --allow-env --allow-read --allow-write --allow-net --allow-run=git,deno jsr:@molt/cli --write ./**/*.ts",
+    "fmt": "deno fmt",
     "check": "deno check ./**/*.ts",
-    "lint": "deno lint ./**/*.ts"
+    "lint": "deno lint",
+    "test": "deno test --check --permit-no-files --allow-env=DENOPS_TEST_CONNECT_TIMEOUT,DENOPS_TEST_DENOPS_PATH,DENOPS_TEST_VERBOSE,DENOPS_TEST_VIM_EXECUTABLE,DENOPS_TEST_NVIM_EXECUTABLE --allow-run=vim,nvim --allow-net=127.0.0.1:0 --allow-read"
   },
   "imports": {
     "@core/unknownutil": "jsr:@core/unknownutil@^4.0.0",
