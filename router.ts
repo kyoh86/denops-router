@@ -92,12 +92,12 @@ export class Router {
     try {
       return await this.#loadBufferCore(denops, prefix, abuf, afile);
     } catch (e) {
-      await buffer.replace(denops, abuf, [`${e}`]);
+      const lines = e?.toString().split(/\r?\n/);
+      await buffer.replace(denops, abuf, lines ?? ["Unidentified ERROR"]);
       await buffer.ensure(denops, abuf, async () => {
         await option.modifiable.setLocal(denops, false);
         await option.readonly.setLocal(denops, true);
         await denops.cmd(`setlocal filetype=denops-router-error`);
-        // ハイライト設定を追加します
         await denops.cmd(`
           syntax clear
           syntax match Error /\\v.+/
